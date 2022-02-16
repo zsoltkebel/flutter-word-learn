@@ -1,10 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:word_learn/model/word.dart';
 import 'package:word_learn/view/add_page.dart';
 import 'package:word_learn/view/details_page.dart';
-
-const word = 'word';
 
 class ListViewPage extends StatefulWidget {
   @override

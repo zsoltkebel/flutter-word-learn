@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:word_learn/model/word.dart';
 
@@ -17,6 +18,27 @@ class DetailsPage extends StatelessWidget {
             children: [
               Text(word.word),
               Text(word.translation),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      CollectionReference words =
+                          FirebaseFirestore.instance.collection('words');
+                      words
+                          .doc(word.documentID)
+                          .delete()
+                          .then((value) {
+                            print("User Deleted");
+                            Navigator.pop(context);
+                          })
+                          .catchError((error) =>
+                              print("Failed to delete user: $error"));
+                    },
+                    icon: Icon(Icons.delete),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
