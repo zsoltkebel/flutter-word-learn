@@ -6,6 +6,8 @@ import 'package:word_learn/view/add_page.dart';
 import 'package:word_learn/view/details_page.dart';
 
 class ListViewPage extends StatefulWidget {
+  const ListViewPage({Key? key}) : super(key: key);
+
   @override
   State<StatefulWidget> createState() => _ListViewPageState();
 }
