@@ -1,60 +1,34 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter_sound/flutter_sound.dart';
-import 'package:word_learn/non-ui/sound_recorder.dart';
+import 'package:just_audio/just_audio.dart';
 
 class SoundPlayer {
-  final FlutterSoundPlayer player;
+  final player = AudioPlayer();
 
-  SoundPlayer() : player = FlutterSoundPlayer();
+  get isPlaying => player.playing;
 
-  get isPlaying => player.isPlaying && !player.isPaused;
-
-  Future init() async {
-    await player.openPlayer();
-    // audioPlayer!.onProgress!.listen((event) {
-    //   Duration maxDuration = event.duration;
-    //   Duration position = event.position;
-    //
-    //   print(position.inMilliseconds);
-    //
-    // });
-  }
-
-  void dispose() {
-    player.closePlayer();
-  }
-
-  Future play({
-    String? pathToAudioFile = SoundRecorder.defaultPathToAudioFile,
-    Function()? whenFinished,
-  }) async {
-    await player.startPlayer(
-        fromURI: pathToAudioFile, whenFinished: whenFinished);
-  }
-
-  Future pause() async {
-    await player.pausePlayer();
-  }
-
-  Future resume() async {
-    await player.resumePlayer();
-  }
-
-  Future stop() async {
-    await player.stopPlayer();
-  }
-
-  Future togglePlaying({whenFinished = VoidCallback}) async {
-    if (player.isPlaying) {
-      await pause();
-    } else if (player.isStopped) {
-      await play(whenFinished: whenFinished);
-    } else if (player.isPaused) {
-      await resume();
+  Future<Duration?> setFile({required String? pathToFile}) {
+    if (pathToFile != null) {
+      pathToFile = pathToFile.replaceFirst('file://', '');
+      // print('path to recording file: $pathToFile');
+      return player.setFilePath(pathToFile);
+    } else {
+      throw Exception('No audio file specified');
     }
   }
 
-  Future getDuration() async {
-    return (await player.getProgress())['duration'];
+  Future play() async {
+    player.seek(const Duration());
+    player.play();
+  }
+
+  Future pause() async {
+    await player.pause();
+  }
+
+  Future resume() async {
+    await player.play();
+  }
+
+  Future stop() async {
+    await player.stop();
   }
 }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:word_learn/model/word.dart';
 import 'package:word_learn/view/components/input_widget.dart';
 
@@ -65,7 +66,7 @@ class _AddPageState extends State<AddPage> {
                 InputWidget(
                   label: 'WORD',
                   controller: wordController,
-                  pathToAudioFile: 'voice1.aac',
+                  // pathToAudioFile: '${getApplicationDocumentsDirectory()}/voice1.m4a',
                   onFieldSubmitted: (text) =>
                       translationFieldFocusNode.requestFocus(),
                 ),
@@ -73,7 +74,7 @@ class _AddPageState extends State<AddPage> {
                 InputWidget(
                   label: 'TRANSLATION',
                   controller: translationController,
-                  pathToAudioFile: 'voice2.aac',
+                  // pathToAudioFile: '${getApplicationDocumentsDirectory()}/voice2.aac',
                   focusNode: translationFieldFocusNode,
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (text) => _submit(),

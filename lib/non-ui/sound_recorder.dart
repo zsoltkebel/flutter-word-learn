@@ -1,58 +1,37 @@
-import 'package:flutter_sound/flutter_sound.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
+import 'package:record/record.dart';
 
 class SoundRecorder {
-  static const defaultPathToAudioFile = 'voice_recording.aac';
+  static const defaultFileName = 'voice_recording.aac';
 
-  final FlutterSoundRecorder _recorder;
-  final String? pathToSaveAudioFile;
+  final Record record;
+  String? pathToSaveAudioFile;
+  String? pathToRecording;
 
-  bool hasRecording = false;
+  SoundRecorder({this.pathToSaveAudioFile}) : record = Record();
 
-  SoundRecorder({this.pathToSaveAudioFile = defaultPathToAudioFile})
-      : _recorder = FlutterSoundRecorder();
+  bool get hasRecording => pathToRecording != null;
 
-  bool get isRecording => _recorder.isRecording;
+  Future<bool> get isRecording => record.isRecording();
 
-  Future init() async {
-    if (await Permission.microphone.request().isDenied) {
-      throw RecordingPermissionException('Microphone permission denied');
-    } else if (await Permission.microphone.isPermanentlyDenied) {
-      openAppSettings();
-    }
-
-    await _recorder.openRecorder();
+  Future<void>? start() {
+    return record.start(path: pathToSaveAudioFile);
   }
 
-  void dispose() {
-    _recorder.closeRecorder();
-  }
-
-  Future start() async {
-    if (_recorder.isStopped) {
-      await _recorder.startRecorder(toFile: pathToSaveAudioFile);
-      print('recorder started');
+  Future<String?> stop() async {
+    if (await record.isRecording()) {
+      pathToRecording = await record.stop();
+      return pathToRecording; // return path to file
     } else {
-      print('recorder is not stopped');
-    }
-  }
-
-  Future stop() async {
-    if (_recorder.isRecording) {
-      await _recorder.stopRecorder();
-      hasRecording = true;
-      print('here');
-    } else {
-      print('Tried to stop recording when it has not been started yet');
+      return Future.value(null);
     }
   }
 
   Future deleteRecording() async {
-    if (_recorder.isStopped) {
-      hasRecording = false;
-
-      await _recorder.closeRecorder();
-      await _recorder.openRecorder();
+    if (pathToRecording != null) {
+      File recordingFile = File(pathToRecording!.replaceFirst('file://', ''));
+      await recordingFile.delete();
+      pathToRecording = null;
     }
   }
 }

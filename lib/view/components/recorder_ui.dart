@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:word_learn/non-ui/sound_player.dart';
 import 'package:word_learn/non-ui/sound_recorder.dart';
 
+const maxRecordDuration = Duration(seconds: 5);
+
 class RecorderUI extends StatefulWidget {
   final Widget? child;
   final bool enabled;
@@ -19,7 +21,7 @@ class RecorderUI extends StatefulWidget {
     this.onRecordingStopped,
     this.onPlayingStarted,
     this.onDiscardRecording,
-    this.duration = const Duration(seconds: 5),
+    this.duration = maxRecordDuration,
     this.child,
     this.enabled = true,
   }) : super(key: key);
@@ -34,96 +36,57 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
       SoundRecorder(pathToSaveAudioFile: widget.pathToAudioFile);
   final player = SoundPlayer();
 
-  final tween = Tween<double>(begin: 1.0, end: 1.2);
-  late final AnimationController _scaleAnimationController =
-      AnimationController(
-    duration: const Duration(milliseconds: 400),
-    reverseDuration: const Duration(milliseconds: 800),
-    vsync: this,
-  );
-
-  // for tapDown
-  late final Animation<double> _animation = CurvedAnimation(
-    parent: _scaleAnimationController,
-    curve: Curves.fastOutSlowIn,
-    reverseCurve: Curves.elasticIn,
-  );
-  late final Animation<double> _scale =
-      Tween<double>(begin: 1.0, end: 1.05).animate(_animation);
+  /// Animation controller for progress bar animation
   late final AnimationController _timerController =
       AnimationController(vsync: this, duration: widget.duration);
 
-  // for tap action
-  late final AnimationController _tapAnimationController = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 70));
-  late final Animation<double> _tapAnimation = CurvedAnimation(
-    parent: _tapAnimationController,
-    curve: Curves.linear,
-    // reverseCurve: Curves.elasticOut,
-  );
-  late final Animation<double> _tapScaleAnimation =
-      Tween<double>(begin: 1.0, end: 0.95).animate(_tapAnimation);
-
-  late Animation<double> _currentScaleAnimation = _scale;
-
   Color? backgroundColor = Colors.white;
-  Duration dur = Duration(milliseconds: 400);
+  Duration backgroundColorFadeDuration = const Duration(milliseconds: 400);
 
-  final Stopwatch stopwatch = Stopwatch();
+  /// values for animated scaling below
+  Function()? onScaleEnd;
+  double scale = 1.0;
+  Curve scaleCurve = Curves.linear;
+  Duration scaleDuration = const Duration(milliseconds: 70);
+
+  Duration? recordDuration;
 
   @override
   void initState() {
     super.initState();
 
     _timerController.addListener(() {
-      setState(() {});
-    });
-    _timerController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        print('animation done time\'s up');
-        setState(() {
-          dur = Duration(milliseconds: 0);
-          backgroundColor = Theme.of(context).primaryColor;
-          Future.delayed(const Duration(milliseconds: 10), () {
-            setState(() {
-              dur = Duration(milliseconds: 200);
-              backgroundColor = Colors.white;
-            });
-          });
-          _timerController.value = 0.0;
-        });
-      }
-    });
-    _animation.addListener(() {
+      // update UI to display progress change
       setState(() {});
     });
 
-    // For sound recording and playback
-    recorder.init();
-    player.init();
+    _timerController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _stopRecording();
+        _fadeOutPrimaryBackground();
+      }
+    });
   }
 
   @override
   void dispose() {
     _timerController.dispose();
-    _tapAnimationController.dispose();
-    _scaleAnimationController.dispose();
-    // For sound recording and playback
-    recorder.dispose();
-    player.dispose();
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // backgroundColor = _timerController.isAnimating ? Colors.grey[300] : Colors.white;
     return Center(
-      child: ScaleTransition(
-        scale: _currentScaleAnimation,
+      child: AnimatedScale(
+        scale: scale,
+        duration: scaleDuration,
+        curve: scaleCurve,
+        onEnd: onScaleEnd,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20.0),
           child: AnimatedContainer(
-            duration: dur,
+            duration: backgroundColorFadeDuration,
             color: backgroundColor,
             child: Stack(
               children: [
@@ -200,16 +163,18 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
         ? (_timerController.isAnimating ? Colors.red : Colors.grey[1000])
         : Colors.grey[300];
     return GestureDetector(
-      onTapDown: (details) => enabled ? _startRecording() : null,
+      onTapDown: (details) async => enabled ? _startRecording() : null,
       onTapCancel: () {
         if (widget.enabled) {
-          setState(() {
-            _scaleAnimationController.reverse();
-            _timerController.stop();
-          });
+          // setState(() {
+          //   _scaleAnimationController.reverse();
+          //   _timerController.stop();
+          // });
         }
       },
-      onTapUp: (details) => enabled ? _stopRecording() : null,
+      onTapUp: (details) async => enabled
+          ? (await recorder.isRecording ? _finishProgressAnimation() : null)
+          : null,
       child: Padding(
         padding: const EdgeInsets.all(0.0),
         child: Icon(
@@ -220,61 +185,102 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
     );
   }
 
-  void _startRecording() {
+  /// Animates progress indicator background to 1.0 position quickly
+  void _finishProgressAnimation() {
+    // quickly jump to end with animation
+    _timerController.stop();
+    _timerController.duration = const Duration(milliseconds: 150);
+    _timerController.forward();
+  }
 
+  /// Animates the progress indicator from 0.0 to 1.0 under maxDuration
+  void _startProgressAnimation() {
+    _timerController.duration = maxRecordDuration; // max recording length
+    _timerController.forward();
+  }
+
+  void _scale({
+    Duration duration = const Duration(),
+    Curve curve = Curves.linear,
+    double scale = 1.0,
+    Function()? onEnd,
+  }) {
     setState(() {
-      _timerController.duration =
-          const Duration(seconds: 5); // max recording length
-      _scaleAnimationController.forward();
-      _timerController.forward();
-      backgroundColor = Colors.grey[300];
-    });
-    Future.delayed(const Duration(milliseconds: 100), () {
-      // slight delay for starting to talk later than actual tap
-      stopwatch.start();
-      recorder.start();
-      widget.onRecordingStarted?.call();
+      scaleDuration = duration;
+      scaleCurve = curve;
+      this.scale = scale;
+      onScaleEnd = onEnd;
     });
   }
 
-  void _stopRecording() {
-    stopwatch.stop();
-    recorder.stop();
-    widget.onRecordingStopped?.call();
-    setState(() {
-      _scaleAnimationController.reverse();
+  void _animateTap() {
+    Duration duration = const Duration(milliseconds: 70);
+    _scale(
+      duration: duration,
+      scale: 0.95,
+      onEnd: () => _scale(duration: duration),
+    );
+  }
 
-      // quickly jump to end with animation
-      _timerController.stop();
-      _timerController.duration = const Duration(milliseconds: 150);
-      _timerController.forward();
+  void _fadeOutPrimaryBackground() {
+    setState(() {
+      // for immediate color change
+      backgroundColorFadeDuration = const Duration();
+      backgroundColor = Theme.of(context).primaryColor;
+      // part below needs some delay for previous part to take effect
+      Future.delayed(const Duration(microseconds: 1), () {
+        setState(() {
+          backgroundColorFadeDuration = const Duration(milliseconds: 400);
+          backgroundColor = Colors.white;
+        });
+      });
+      _timerController.value = 0.0;
     });
+  }
+
+  void _startRecording() async {
+    // scale bigger slowly
+    _scale(
+      duration: const Duration(milliseconds: 400),
+      scale: 1.05,
+      curve: Curves.fastOutSlowIn,
+    );
+    setState(() {
+      backgroundColor = Colors.grey[300];
+    });
+
+    await recorder.start();
+    widget.onRecordingStarted?.call();
+    _startProgressAnimation();
+  }
+
+  void _stopRecording() async {
+    String? pathToRecording = await recorder.stop();
+    recordDuration = await player.setFile(pathToFile: pathToRecording);
+    print('path to recording: $pathToRecording');
+
+    widget.onRecordingStopped?.call();
+
+    // scale bounce back to original
+    _scale(
+      duration: const Duration(milliseconds: 800),
+      curve: Curves.elasticOut,
+    );
   }
 
   void _playRecording() async {
-    player.play(pathToAudioFile: widget.pathToAudioFile);
+    player.play();
     widget.onPlayingStarted?.call();
     if (recorder.hasRecording) {
-      _timerController.duration = stopwatch.elapsed;
+      _timerController.duration = recordDuration;
       _timerController.forward(from: 0.0);
     }
   }
 
   void _discardRecording() {
-    stopwatch.reset();
     recorder.deleteRecording();
-
     widget.onDiscardRecording?.call();
-    setState(() {
-      Animation<double> previousAnimation = _currentScaleAnimation;
-      _currentScaleAnimation = _tapScaleAnimation;
-      _tapAnimationController.forward().then((value) => _tapAnimationController
-          .reverse()
-          .then((value) => _currentScaleAnimation)
-          .then((value) => _currentScaleAnimation = previousAnimation));
 
-      _timerController.value = 0.0;
-      _timerController.duration = const Duration(seconds: 5);
-    });
+    _animateTap();
   }
 }

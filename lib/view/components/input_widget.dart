@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:word_learn/non-ui/sound_recorder.dart';
 import 'package:word_learn/view/components/recorder_ui.dart';
 
 class InputWidget extends StatefulWidget {
@@ -55,7 +56,7 @@ class _InputWidgetState extends State<InputWidget> {
           child: Row(
             children: [
               Text(
-                widget.label,
+                widget.label.toUpperCase(),
                 style: Theme.of(context).textTheme.caption,
               ),
               const SizedBox(width: 8.0),
