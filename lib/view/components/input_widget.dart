@@ -1,11 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:word_learn/non-ui/sound_recorder.dart';
+import 'package:word_learn/view/components/info_section.dart';
 import 'package:word_learn/view/components/recorder_ui.dart';
 
 class InputWidget extends StatefulWidget {
-  final TextEditingController? controller;
+  final TextEditingController? textController;
   final TextInputAction textInputAction;
   final Function(String)? onFieldSubmitted;
+  final Function(File?)? onRecordingFileChanged;
   final String label;
   final FocusNode? focusNode;
   final String? pathToAudioFile;
@@ -13,9 +16,10 @@ class InputWidget extends StatefulWidget {
   const InputWidget({
     Key? key,
     this.pathToAudioFile,
-    this.controller,
+    this.textController,
     this.textInputAction = TextInputAction.next,
     this.onFieldSubmitted,
+    this.onRecordingFileChanged,
     this.label = '',
     this.focusNode,
   }) : super(key: key);
@@ -25,7 +29,7 @@ class InputWidget extends StatefulWidget {
 }
 
 class _InputWidgetState extends State<InputWidget> {
-  late final textController = widget.controller ?? TextEditingController();
+  late final textController = widget.textController ?? TextEditingController();
 
   bool hasText = false;
   bool hasRecording = false;
@@ -51,46 +55,10 @@ class _InputWidgetState extends State<InputWidget> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 20.0, bottom: 10.0),
-          child: Row(
-            children: [
-              Text(
-                widget.label.toUpperCase(),
-                style: Theme.of(context).textTheme.caption,
-              ),
-              const SizedBox(width: 8.0),
-              AnimatedScale(
-                curve: Curves.bounceInOut,
-                scale: hasText ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 400),
-                child: Icon(
-                  Icons.title,
-                  size: 12.0,
-                  color: Theme.of(context)
-                      .textTheme
-                      .caption
-                      ?.color
-                      ?.withOpacity(0.3),
-                ),
-              ),
-              const SizedBox(width: 4.0),
-              AnimatedScale(
-                curve: Curves.bounceInOut,
-                scale: hasRecording ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 400),
-                child: Icon(
-                  Icons.record_voice_over_rounded,
-                  size: 12.0,
-                  color: Theme.of(context)
-                      .textTheme
-                      .caption
-                      ?.color
-                      ?.withOpacity(0.3),
-                ),
-              ),
-            ],
-          ),
+        InfoSection(
+          caption: widget.label,
+          hasText: hasText,
+          hasRecording: hasRecording,
         ),
         RecorderUI(
           pathToAudioFile: widget.pathToAudioFile,
@@ -104,9 +72,7 @@ class _InputWidgetState extends State<InputWidget> {
               hasRecording = false;
             });
           },
-          duration: const Duration(seconds: 5),
-          //TODO actual audio file length
-          // enabled: textController.text.isNotEmpty,
+          onRecordingFileChanged: widget.onRecordingFileChanged,
           child: _buildTextFormField(
             controller: textController,
             inputAction: widget.textInputAction,

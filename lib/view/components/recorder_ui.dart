@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:word_learn/non-ui/sound_player.dart';
 import 'package:word_learn/non-ui/sound_recorder.dart';
@@ -11,6 +13,7 @@ class RecorderUI extends StatefulWidget {
   final Function? onRecordingStopped;
   final Function? onPlayingStarted;
   final Function? onDiscardRecording;
+  final Function(File?)? onRecordingFileChanged;
   final Duration duration;
   final String? pathToAudioFile;
 
@@ -21,6 +24,7 @@ class RecorderUI extends StatefulWidget {
     this.onRecordingStopped,
     this.onPlayingStarted,
     this.onDiscardRecording,
+    this.onRecordingFileChanged,
     this.duration = maxRecordDuration,
     this.child,
     this.enabled = true,
@@ -93,25 +97,25 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
                 Positioned.fill(
                   child: _buildProgressBar(progress: _timerController.value),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20.0,
-                    vertical: 10.0,
-                  ),
+                IntrinsicHeight(
                   child: Row(
                     children: [
                       Expanded(
-                        child: Center(
-                          child: AnimatedOpacity(
-                            opacity: _timerController.isAnimating ? 0.0 : 1.0,
-                            duration: const Duration(milliseconds: 200),
-                            child: widget.child ?? Container(),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20.0,
+                            vertical: 10.0,
+                          ),
+                          child: Center(
+                            child: AnimatedOpacity(
+                              opacity: _timerController.isAnimating ? 0.0 : 1.0,
+                              duration: const Duration(milliseconds: 200),
+                              child: widget.child ?? Container(),
+                            ),
                           ),
                         ),
                       ),
-                      Row(
-                        children: _buildOptionButtons(),
-                      ),
+                      _buildOptionButtons(),
                     ],
                   ),
                 ),
@@ -135,28 +139,45 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
         );
       });
 
-  List<Widget> _buildOptionButtons() {
-    List<Widget> optionButtons = [];
-    if (recorder.hasRecording) {
-      optionButtons.addAll([
-        GestureDetector(
-          onTap: _playRecording,
-          child: const Icon(Icons.play_arrow),
-        ),
-        const SizedBox(
-          width: 25.0,
-        ),
-        GestureDetector(
-          onTap: _discardRecording,
-          child: const Icon(Icons.mic_off),
-        ),
-      ]);
-    } else {
-      optionButtons.add(_buildRecordButton(enabled: widget.enabled));
-    }
-
-    return optionButtons;
-  }
+  Widget _buildOptionButtons() => recorder.hasRecording
+      ? Row(children: [
+          // const VerticalDivider(
+          //   indent: 10.0,
+          //   endIndent: 10.0,
+          //   width: 2.0,
+          //   thickness: 0.0,
+          // ),
+          GestureDetector(
+            onTap: _playRecording,
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Icon(
+                Icons.play_arrow,
+                color: Theme.of(context).textTheme.caption?.color,
+              ),
+            ),
+          ),
+          Opacity(
+            opacity: _timerController.isAnimating ? 0.0 : 1.0,
+            child: const VerticalDivider(
+              indent: 10.0,
+              endIndent: 10.0,
+              width: 2.0,
+              thickness: 0.0,
+            ),
+          ),
+          GestureDetector(
+            onTap: _discardRecording,
+            child: const Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Icon(
+                Icons.mic_off,
+                color: Colors.red,
+              ),
+            ),
+          ),
+        ])
+      : _buildRecordButton(enabled: widget.enabled);
 
   Widget _buildRecordButton({bool enabled = true}) {
     final iconColor = enabled
@@ -176,7 +197,7 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
           ? (await recorder.isRecording ? _finishProgressAnimation() : null)
           : null,
       child: Padding(
-        padding: const EdgeInsets.all(0.0),
+        padding: const EdgeInsets.all(20.0),
         child: Icon(
           _timerController.isAnimating ? Icons.mic : Icons.mic_none,
           color: iconColor,
@@ -256,8 +277,12 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
 
   void _stopRecording() async {
     String? pathToRecording = await recorder.stop();
-    recordDuration = await player.setFile(pathToFile: pathToRecording);
+    recordDuration = await player.setFile(path: pathToRecording);
     print('path to recording: $pathToRecording');
+
+    widget.onRecordingFileChanged?.call(pathToRecording == null
+        ? null
+        : File(pathToRecording.replaceFirst('file://', '')));
 
     widget.onRecordingStopped?.call();
 
@@ -280,6 +305,8 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
   void _discardRecording() {
     recorder.deleteRecording();
     widget.onDiscardRecording?.call();
+
+    widget.onRecordingFileChanged?.call(null);
 
     _animateTap();
   }

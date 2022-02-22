@@ -1,9 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:word_learn/model/firestore_manager.dart';
 import 'package:word_learn/model/word.dart';
 import 'package:word_learn/view/add_page.dart';
+import 'package:word_learn/view/components/info_icons.dart';
 import 'package:word_learn/view/details_page.dart';
+import 'package:word_learn/extension/extensions.dart';
 
 class ListViewPage extends StatefulWidget {
   const ListViewPage({Key? key}) : super(key: key);
@@ -30,18 +33,65 @@ class _ListViewPageState extends State<ListViewPage> {
           return ListView.builder(
             itemCount: snapshot.data?.docs.length,
             itemBuilder: (context, index) {
-              var doc = snapshot.data!.docs[index];
+              final doc = snapshot.data!.docs[index];
               Word word = Word.fromSnapshot(doc);
-              return ListTile(
-                title: Text(word.word),
-                subtitle: Text(word.translation),
-                trailing: const Text('Spanish'),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => DetailsPage(word)),
-                  );
+              return Dismissible(
+                direction: DismissDirection.endToStart,
+                key: UniqueKey(),
+                onDismissed: (direction) {
+                  // Remove the item from the data source.
+                  setState(() {
+                    // immediately remove widget from tree
+                    snapshot.data!.docs.removeAt(index);
+
+                    FirestoreManager.deleteWordFull(word);
+                  });
+
+                  // Then show a snackbar
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(
+                          'Deleted "${word.word.truncateWithEllipsis(8)}"')));
                 },
+                background: Container(
+                  color: Colors.red,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 20.0),
+                      child: Icon(
+                        Icons.delete,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                child: ListTile(
+                  title: Text(word.word),
+                  subtitle: Text(word.translation),
+                  trailing: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InfoIcons(
+                        hasText: word.word.isNotEmpty,
+                        hasRecording: word.storageRefToRec1 != null,
+                      ),
+                      const SizedBox(
+                        height: 4.0,
+                      ),
+                      InfoIcons(
+                        hasText: word.translation.isNotEmpty,
+                        hasRecording: word.storageRefToRec2 != null,
+                      ),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => DetailsPage(word)),
+                    );
+                  },
+                ),
               );
             },
           );

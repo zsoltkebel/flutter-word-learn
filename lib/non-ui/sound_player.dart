@@ -5,11 +5,15 @@ class SoundPlayer {
 
   get isPlaying => player.playing;
 
-  Future<Duration?> setFile({required String? pathToFile}) {
-    if (pathToFile != null) {
-      pathToFile = pathToFile.replaceFirst('file://', '');
+  Future setURL(String url) {
+    return player.setUrl(url);
+  }
+
+  Future<Duration?> setFile({required String? path}) {
+    if (path != null) {
+      path = path.replaceFirst('file://', '');
       // print('path to recording file: $pathToFile');
-      return player.setFilePath(pathToFile);
+      return player.setFilePath(path);
     } else {
       throw Exception('No audio file specified');
     }
