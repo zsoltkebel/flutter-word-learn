@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
@@ -6,6 +8,8 @@ import 'package:word_learn/model/firebase_storage_helper.dart';
 import 'package:word_learn/model/firestore_manager.dart';
 import 'package:word_learn/model/word.dart';
 import 'package:word_learn/non-ui/sound_player.dart';
+import 'package:word_learn/view/components/display.dart';
+import 'package:word_learn/view/components/info_icons.dart';
 import 'package:word_learn/view/components/info_section.dart';
 
 class DetailsPage extends StatefulWidget {
@@ -34,13 +38,26 @@ class _DetailsPageState extends State<DetailsPage> {
     wordController.text = widget.word.word;
     translationController.text = widget.word.translation;
 
-    FirebaseStorageHelper.downloadRecording1(word: widget.word);
-    FirebaseStorageHelper.downloadRecording2(word: widget.word);
+    FirebaseStorageHelper.downloadFiles(
+      storageRefs: [widget.word.storageRefToRec1, widget.word.storageRefToRec2],
+    ).then((recordings) {
+      setState(() {
+        widget.word.rec1 = recordings[0];
+        widget.word.rec2 = recordings[1];
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        elevation: 0.0,
+        title: const Text('Word'),
+        actions: [
+          IconButton(onPressed: () {}, icon: const Icon(Icons.edit)),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -55,111 +72,31 @@ class _DetailsPageState extends State<DetailsPage> {
                   hasText: widget.word.word.isNotEmpty,
                   hasRecording: widget.word.storageRefToRec1 != null,
                 ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: wordController,
-                        minLines: 1,
-                        maxLines: 10,
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          hintText: 'type here ...',
-                        ),
-                        onChanged: (text) {
-                          setState(() {
-                            widget.word.word = text;
-                            _formKey.currentState!.validate();
-                          });
-                        },
-                        onFieldSubmitted: (text) => _submitUpdate(),
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Don\'t leave this empty'
-                            : null,
-                      ),
-                    ),
-                    isLoading
-                        ? const CupertinoActivityIndicator()
-                        : IconButton(
-                            onPressed: () async {
-                              if (widget.word.rec1 != null) {
-                                await player.setFile(
-                                    path: widget.word.rec1!.path);
-                                await player.play();
-                              } else {
-                                String url = await FirebaseStorage.instance
-                                    .ref(widget.word.storageRefToRec1)
-                                    .getDownloadURL();
-                                print(url);
-                                setState(() {
-                                  isLoading = true;
-                                });
-                                await player.setURL(url);
-                                await player.play();
-                                setState(() {
-                                  isLoading = false;
-                                });
-                              }
-                            },
-                            icon: Icon(Icons.record_voice_over)),
-                  ],
+                Display(
+                  recording: widget.word.rec1,
+                  text: widget.word.word,
+                  onTextChanged: (text) {
+                    setState(() {
+                      widget.word.word = text;
+                    });
+                  },
                 ),
                 InfoSection(
                   caption: 'translation',
                   hasText: widget.word.translation.isNotEmpty,
                   hasRecording: widget.word.storageRefToRec2 != null,
                 ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: translationController,
-                        minLines: 1,
-                        maxLines: 10,
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          hintText: 'type here ...',
-                        ),
-                        onChanged: (text) {
-                          setState(() {
-                            widget.word.translation = text;
-                            _formKey.currentState!.validate();
-                          });
-                        },
-                        onFieldSubmitted: (text) => _submitUpdate(),
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Don\'t leave this empty'
-                            : null,
-                      ),
-                    ),
-                    isLoading
-                        ? const CupertinoActivityIndicator()
-                        : IconButton(
-                            onPressed: () async {
-                              if (widget.word.rec2 != null) {
-                                await player.setFile(
-                                    path: widget.word.rec2!.path);
-                                await player.play();
-                              } else {
-                                String url = await FirebaseStorage.instance
-                                    .ref(widget.word.storageRefToRec2)
-                                    .getDownloadURL();
-                                print(url);
-                                setState(() {
-                                  isLoading = true;
-                                });
-                                await player.setURL(url);
-                                await player.play();
-                                setState(() {
-                                  isLoading = false;
-                                });
-                              }
-                            },
-                            icon: Icon(Icons.record_voice_over)),
-                  ],
+                Display(
+                  recording: widget.word.rec2,
+                  text: widget.word.translation,
+                  onTextChanged: (text) {
+                    setState(() {
+                      widget.word.translation = text;
+                    });
+                  },
                 ),
                 const SizedBox(
-                  height: 20.0,
+                  height: 140.0,
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

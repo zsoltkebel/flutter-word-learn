@@ -1,13 +1,17 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:word_learn/non-ui/sound_player.dart';
 import 'package:word_learn/non-ui/sound_recorder.dart';
+import 'package:word_learn/view/components/bubble.dart';
+import 'package:word_learn/view/components/progress_bar.dart';
+import 'package:word_learn/view/components/scaling.dart';
 
 const maxRecordDuration = Duration(seconds: 5);
+const defaultFadeDuration = Duration(milliseconds: 400);
 
 class RecorderUI extends StatefulWidget {
-  final Widget? child;
   final bool enabled;
   final Function? onRecordingStarted;
   final Function? onRecordingStopped;
@@ -16,6 +20,9 @@ class RecorderUI extends StatefulWidget {
   final Function(File?)? onRecordingFileChanged;
   final Duration duration;
   final String? pathToAudioFile;
+  final TextEditingController? textEditingController;
+  final TextInputAction? textInputAction;
+  final Function(String)? onFieldSubmitted;
 
   const RecorderUI({
     Key? key,
@@ -26,8 +33,10 @@ class RecorderUI extends StatefulWidget {
     this.onDiscardRecording,
     this.onRecordingFileChanged,
     this.duration = maxRecordDuration,
-    this.child,
     this.enabled = true,
+    this.textEditingController,
+    this.onFieldSubmitted,
+    this.textInputAction = TextInputAction.done,
   }) : super(key: key);
 
   @override
@@ -44,14 +53,13 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
   late final AnimationController _timerController =
       AnimationController(vsync: this, duration: widget.duration);
 
+  FocusNode textFieldFocusNode = FocusNode();
+
   Color? backgroundColor = Colors.white;
   Duration backgroundColorFadeDuration = const Duration(milliseconds: 400);
+  Function()? onEnd;
 
-  /// values for animated scaling below
-  Function()? onScaleEnd;
-  double scale = 1.0;
-  Curve scaleCurve = Curves.linear;
-  Duration scaleDuration = const Duration(milliseconds: 70);
+  ScalingController scalingController = ScalingController();
 
   Duration? recordDuration;
 
@@ -59,22 +67,28 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
   void initState() {
     super.initState();
 
-    _timerController.addListener(() {
-      // update UI to display progress change
-      setState(() {});
-    });
+    _timerController.addListener(
+        () => setState(() {})); // update UI to display progress change
 
-    _timerController.addStatusListener((status) {
+    _timerController.addStatusListener((status) async {
       if (status == AnimationStatus.completed) {
-        _stopRecording();
-        _fadeOutPrimaryBackground();
+        if (await recorder.isRecording) {
+          _stopRecording();
+          _fadeOutPrimaryBackground();
+        } else if (recorder.hasRecording) {
+          _timerController.value = 0.0;
+        }
       }
     });
+
+    textFieldFocusNode.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
     _timerController.dispose();
+    scalingController.dispose();
+    textFieldFocusNode.dispose();
 
     super.dispose();
   }
@@ -82,129 +96,165 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: AnimatedScale(
-        scale: scale,
-        duration: scaleDuration,
-        curve: scaleCurve,
-        onEnd: onScaleEnd,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20.0),
+      child: Scaling(
+        controller: scalingController,
+        child: Bubble(
           child: AnimatedContainer(
+            onEnd: onEnd,
             duration: backgroundColorFadeDuration,
             color: backgroundColor,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: _buildProgressBar(progress: _timerController.value),
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () {
+                print('gesture detector tap');
+                if (textFieldFocusNode.hasFocus && recorder.hasRecording) {
+                  _playRecording();
+                }
+              },
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: ProgressBar(progress: _timerController.value),
+                  ),
+                  _buildInputLayer(),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputLayer() => Row(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 10.0,
+              ),
+              child: Center(
+                child: AnimatedOpacity(
+                  opacity: _timerController.isAnimating ? 0.0 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: _buildInputContent(),
                 ),
-                IntrinsicHeight(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20.0,
-                            vertical: 10.0,
-                          ),
-                          child: Center(
-                            child: AnimatedOpacity(
-                              opacity: _timerController.isAnimating ? 0.0 : 1.0,
-                              duration: const Duration(milliseconds: 200),
-                              child: widget.child ?? Container(),
+              ),
+            ),
+          ),
+          _buildOptionButton(),
+          // _buildOptionButtons(),
+        ],
+      );
+
+  Widget _buildInputContent() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTextField(),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            child: SizedBox(
+              height: textFieldFocusNode.hasFocus ? null : 0.0,
+              width: double.infinity,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 100),
+                opacity: textFieldFocusNode.hasFocus ? 1.0 : 0.0,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: recorder.hasRecording
+                      ? Row(
+                          children: [
+                            Icon(
+                              Icons.play_circle_fill,
+                              size: 12.0,
+                              color: Theme.of(context).textTheme.caption?.color,
                             ),
-                          ),
+                            const SizedBox(
+                              width: 4.0,
+                            ),
+                            Text(
+                              'Tap to listen',
+                              style: Theme.of(context).textTheme.caption,
+                            ),
+                          ],
+                        )
+                      : Text(
+                          'Hold microphone ro record',
+                          style: Theme.of(context).textTheme.caption,
                         ),
-                      ),
-                      _buildOptionButtons(),
-                    ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+
+  Widget _buildTextField() => TextFormField(
+        autofocus: true,
+        controller: widget.textEditingController,
+        focusNode: textFieldFocusNode,
+        keyboardType: TextInputType.text,
+        textInputAction: widget.textInputAction,
+        style: Theme.of(context).textTheme.titleLarge,
+        decoration: const InputDecoration(
+          // labelText: 'Translation',
+          border: InputBorder.none,
+          hintText: 'Type here...',
+        ),
+        onFieldSubmitted: widget.onFieldSubmitted,
+        onTap: () {
+          if (textFieldFocusNode.hasFocus && recorder.hasRecording) {
+            _playRecording();
+          }
+        },
+      );
+
+  Widget _buildOptionButton({bool enabled = true}) => AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: recorder.hasRecording
+            ? GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                // onTap: _discardRecording,
+                onTap: _showDeleteRecordingActionSheet,
+                child: const Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: Icon(
+                    Icons.mic_off,
+                    color: Colors.red,
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProgressBar({double progress = 0.0}) =>
-      LayoutBuilder(builder: (context, constraints) {
-        return Row(
-          children: [
-            Container(
-              width: constraints.maxWidth * progress,
-              color: Theme.of(context).primaryColor,
-            ),
-          ],
-        );
-      });
-
-  Widget _buildOptionButtons() => recorder.hasRecording
-      ? Row(children: [
-          // const VerticalDivider(
-          //   indent: 10.0,
-          //   endIndent: 10.0,
-          //   width: 2.0,
-          //   thickness: 0.0,
-          // ),
-          GestureDetector(
-            onTap: _playRecording,
-            child: Padding(
-              padding: EdgeInsets.all(20.0),
-              child: Icon(
-                Icons.play_arrow,
-                color: Theme.of(context).textTheme.caption?.color,
+              )
+            : GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTapDown: (details) async =>
+                    enabled ? _startRecording() : null,
+                onTapCancel: () {
+                  if (widget.enabled) {
+                    // setState(() {
+                    //   _scaleAnimationController.reverse();
+                    //   _timerController.stop();
+                    // });
+                  }
+                },
+                onTapUp: (details) async => enabled
+                    ? (await recorder.isRecording
+                        ? _finishProgressAnimation()
+                        : null)
+                    : null,
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Icon(
+                    _timerController.isAnimating ? Icons.mic : Icons.mic_none,
+                    color: enabled
+                        ? (_timerController.isAnimating
+                            ? Colors.red
+                            : Colors.grey[1000])
+                        : Colors.grey[300],
+                  ),
+                ),
               ),
-            ),
-          ),
-          Opacity(
-            opacity: _timerController.isAnimating ? 0.0 : 1.0,
-            child: const VerticalDivider(
-              indent: 10.0,
-              endIndent: 10.0,
-              width: 2.0,
-              thickness: 0.0,
-            ),
-          ),
-          GestureDetector(
-            onTap: _discardRecording,
-            child: const Padding(
-              padding: EdgeInsets.all(20.0),
-              child: Icon(
-                Icons.mic_off,
-                color: Colors.red,
-              ),
-            ),
-          ),
-        ])
-      : _buildRecordButton(enabled: widget.enabled);
-
-  Widget _buildRecordButton({bool enabled = true}) {
-    final iconColor = enabled
-        ? (_timerController.isAnimating ? Colors.red : Colors.grey[1000])
-        : Colors.grey[300];
-    return GestureDetector(
-      onTapDown: (details) async => enabled ? _startRecording() : null,
-      onTapCancel: () {
-        if (widget.enabled) {
-          // setState(() {
-          //   _scaleAnimationController.reverse();
-          //   _timerController.stop();
-          // });
-        }
-      },
-      onTapUp: (details) async => enabled
-          ? (await recorder.isRecording ? _finishProgressAnimation() : null)
-          : null,
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Icon(
-          _timerController.isAnimating ? Icons.mic : Icons.mic_none,
-          color: iconColor,
-        ),
-      ),
-    );
-  }
+      );
 
   /// Animates progress indicator background to 1.0 position quickly
   void _finishProgressAnimation() {
@@ -220,55 +270,47 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
     _timerController.forward();
   }
 
-  void _scale({
-    Duration duration = const Duration(),
-    Curve curve = Curves.linear,
-    double scale = 1.0,
+  void _animateContainerColor({
+    Duration duration = defaultFadeDuration,
+    Color? color = Colors.white,
     Function()? onEnd,
   }) {
     setState(() {
-      scaleDuration = duration;
-      scaleCurve = curve;
-      this.scale = scale;
-      onScaleEnd = onEnd;
+      backgroundColorFadeDuration = duration;
+      backgroundColor = color;
+      this.onEnd = onEnd;
     });
   }
 
   void _animateTap() {
     Duration duration = const Duration(milliseconds: 70);
-    _scale(
+    scalingController.animateScale(
       duration: duration,
       scale: 0.95,
-      onEnd: () => _scale(duration: duration),
+      onEnd: () => scalingController.animateScale(duration: duration),
     );
   }
 
   void _fadeOutPrimaryBackground() {
-    setState(() {
-      // for immediate color change
-      backgroundColorFadeDuration = const Duration();
-      backgroundColor = Theme.of(context).primaryColor;
-      // part below needs some delay for previous part to take effect
-      Future.delayed(const Duration(microseconds: 1), () {
-        setState(() {
-          backgroundColorFadeDuration = const Duration(milliseconds: 400);
-          backgroundColor = Colors.white;
+    _animateContainerColor(
+        duration: const Duration(microseconds: 1),
+        // very slight delay for immediate color change
+        color: Theme.of(context).primaryColor,
+        onEnd: () {
+          _timerController.value = 0.0;
+          _animateContainerColor();
         });
-      });
-      _timerController.value = 0.0;
-    });
   }
 
   void _startRecording() async {
-    // scale bigger slowly
-    _scale(
+    scalingController.animateScale(
       duration: const Duration(milliseconds: 400),
       scale: 1.05,
       curve: Curves.fastOutSlowIn,
     );
-    setState(() {
-      backgroundColor = Colors.grey[300];
-    });
+    _animateContainerColor(
+      color: Colors.grey[300],
+    );
 
     await recorder.start();
     widget.onRecordingStarted?.call();
@@ -287,7 +329,7 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
     widget.onRecordingStopped?.call();
 
     // scale bounce back to original
-    _scale(
+    scalingController.animateScale(
       duration: const Duration(milliseconds: 800),
       curve: Curves.elasticOut,
     );
@@ -309,5 +351,29 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
     widget.onRecordingFileChanged?.call(null);
 
     _animateTap();
+  }
+
+  void _showDeleteRecordingActionSheet() {
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext context) => CupertinoActionSheet(
+        actions: <CupertinoActionSheetAction>[
+          CupertinoActionSheetAction(
+            child: const Text('Delete recording'),
+            isDestructiveAction: true,
+            onPressed: () {
+              _discardRecording();
+              Navigator.pop(context);
+            },
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          child: const Text('Cancel'),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
+    );
   }
 }

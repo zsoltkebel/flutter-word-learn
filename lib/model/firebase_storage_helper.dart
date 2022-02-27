@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
-import 'package:word_learn/model/word.dart';
 
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:firebase_core/firebase_core.dart' as firebase_core;
@@ -11,14 +10,17 @@ class FirebaseStorageHelper {
     return 'recordings/$fileName';
   }
 
-  static Future<void> _uploadFile(File? file, String path) async {
+  static Future<String?> _uploadFile(File file, String path) async {
     print('file to upload: ${file}');
-    if (file == null) return;
     try {
-      await firebase_storage.FirebaseStorage.instance.ref(path).putFile(file);
+      final task = await firebase_storage.FirebaseStorage.instance
+          .ref(path)
+          .putFile(file);
+      return Future.value(task.ref.fullPath);
     } on firebase_core.FirebaseException catch (e) {
-      print(e);
       // e.g, e.code == 'canceled'
+      print(e);
+      return Future.value(null);
     }
   }
 
@@ -26,6 +28,7 @@ class FirebaseStorageHelper {
     required File toFile,
     required String storageRef,
   }) async {
+    print('trying to download: $storageRef');
     try {
       await firebase_storage.FirebaseStorage.instance
           .ref(storageRef)
@@ -36,35 +39,52 @@ class FirebaseStorageHelper {
     }
   }
 
-  static Future<void> uploadRecording1({
-    required Word word,
-  }) {
-    return _uploadFile(word.rec1, storageRefToRec(word.documentID! + '.m4a'));
+  static Future deleteFile({required String path}) async {
+    try {
+      await firebase_storage.FirebaseStorage.instance.ref(path).delete();
+    } on firebase_core.FirebaseException catch (e) {
+      print(e);
+    }
   }
 
-  static Future<void> downloadRecording1({
-    required Word word,
+  static Future<List<String?>> uploadFiles({
+    required Map<File?, String?> fileRefMap,
+  }) async {
+    List<String?> storageRefs = [];
+    for (final entry in fileRefMap.entries) {
+      File? file = entry.key;
+      String? ref = entry.value;
+      if (file == null || ref == null) {
+        storageRefs.add(null);
+      } else {
+        storageRefs.add(await _uploadFile(file, ref));
+      }
+    }
+    return Future.value(storageRefs);
+  }
+
+  /// Downloads recordings at provided storage references.
+  /// If reference is null, the corresponding File in the
+  /// return list is also going to be null.
+  static Future<List<File?>> downloadFiles({
+    required List<String?> storageRefs,
     toCache = true,
   }) async {
     Directory appDir = await (toCache
         ? getTemporaryDirectory()
         : getApplicationDocumentsDirectory());
-    word.rec1 = File('${appDir.path}/${word.storageRefToRec1}');
 
-    return _downloadFile(toFile: word.rec1!, storageRef: word.storageRefToRec1!);
-    // print(rec1!.path);
-  }
+    List<File?> files = [];
+    for (String? storageRef in storageRefs) {
+      if (storageRef == null) {
+        files.add(null);
+      } else {
+        File file = File('${appDir.path}/$storageRef');
+        await _downloadFile(toFile: file, storageRef: storageRef);
+        files.add(file);
+      }
+    }
 
-  static Future<void> downloadRecording2({
-    required Word word,
-    toCache = true,
-  }) async {
-    Directory appDir = await (toCache
-        ? getTemporaryDirectory()
-        : getApplicationDocumentsDirectory());
-    word.rec2 = File('${appDir.path}/${word.storageRefToRec2}');
-
-    return _downloadFile(toFile: word.rec2!, storageRef: word.storageRefToRec2!);
-    // print(rec1!.path);
+    return Future.value(files);
   }
 }

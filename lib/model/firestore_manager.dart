@@ -1,7 +1,5 @@
-import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:word_learn/model/firebase_storage_helper.dart';
 import 'package:word_learn/model/word.dart';
 
 class FirestoreManager {
@@ -19,36 +17,21 @@ class FirestoreManager {
         .catchError((error) => print("Failed to update user: $error"));
   }
 
-  static Future<void> uploadFile(File? file, String path) async {
-    print('file to upload: ${file}');
-    if (file == null) return;
-    try {
-      await FirebaseStorage.instance.ref(path).putFile(file);
-    } on FirebaseException catch (e) {
-      print(e);
-      // e.g, e.code == 'canceled'
-    }
-  }
-
-  static Future deleteFile(String path) {
-    return FirebaseStorage.instance.ref(path).delete();
-  }
-
   static Future deleteWord(Word word) {
     return words.doc(word.documentID).delete().then((value) {
       print("Word Deleted");
     }).catchError((error) => print("Failed to delete user: $error"));
   }
 
-  static deleteWordFull(Word word) {
-    print('deleting word and recordings');
+  static Future deleteWordFull(Word word) async {
+    print('deleting word and recordings: ${word.documentID}');
     if (word.storageRefToRec1 != null) {
-      deleteFile(word.storageRefToRec1!);
+      await FirebaseStorageHelper.deleteFile(path: word.storageRefToRec1!);
     }
     if (word.storageRefToRec2 != null) {
-      deleteFile(word.storageRefToRec2!);
+      await FirebaseStorageHelper.deleteFile(path: word.storageRefToRec2!);
     }
-    deleteWord(word);
+    await deleteWord(word);
   }
 
   static Future<DocumentSnapshot?> getWord(String? documentID) {

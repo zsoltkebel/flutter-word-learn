@@ -3,11 +3,13 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:word_learn/model/firebase_storage_helper.dart';
 import 'package:word_learn/model/firestore_manager.dart';
 import 'package:word_learn/model/word.dart';
-import 'package:word_learn/view/components/input_widget.dart';
+import 'package:word_learn/view/components/info_section.dart';
 import 'package:word_learn/extension/extensions.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+import 'package:word_learn/view/components/recorder_ui.dart';
 
 class AddPage extends StatefulWidget {
   const AddPage({Key? key}) : super(key: key);
@@ -31,23 +33,22 @@ class _AddPageState extends State<AddPage> {
   void _submit() {
     if (wordController.text.isNotEmpty &&
         translationController.text.isNotEmpty) {
-      Word word = Word(wordController.text, translationController.text);
-      words.add(word.toJson()).then((doc) {
-        FirestoreManager.uploadFile(recording1, 'recordings/${doc.id}-w.m4a')
-            .whenComplete(() {
-          if (recording1 != null) {
-            word.storageRefToRec1 = 'recordings/${doc.id}-w.m4a';
-            print(word.toJson());
-            FirestoreManager.updateWord(word);
-          }
-        });
-        FirestoreManager.uploadFile(recording2, 'recordings/${doc.id}-t.m4a')
-            .whenComplete(() {
-          if (recording2 != null) {
-            word.storageRefToRec2 = 'recordings/${doc.id}-t.m4a';
-            print(word.toJson());
-            FirestoreManager.updateWord(word);
-          }
+      Word word = Word(
+        word: wordController.text,
+        translation: translationController.text,
+      );
+      words.add(word.toJson()).then((doc) async {
+        print('uploaded: ${doc.id}');
+        word = word.copyWith(id: doc.id);
+        FirebaseStorageHelper.uploadFiles(
+          fileRefMap: {
+            recording1: 'recordings/${word.documentID!}-w.m4a',
+            recording2: 'recordings/${word.documentID!}-t.m4a',
+          },
+        ).then((storageRefs) {
+          word.storageRefToRec1 = storageRefs[0];
+          word.storageRefToRec2 = storageRefs[1];
+          FirestoreManager.updateWord(word);
         });
 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -63,6 +64,9 @@ class _AddPageState extends State<AddPage> {
   @override
   void initState() {
     super.initState();
+
+    wordController.addListener(() => setState(() {}));
+    translationController.addListener(() => setState(() {}));
     translationFieldFocusNode = FocusNode();
   }
 
@@ -78,44 +82,53 @@ class _AddPageState extends State<AddPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   title: Text('New Word'),
-      // ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                InputWidget(
-                  label: 'WORD',
-                  textController: wordController,
-                  // pathToAudioFile: '${getApplicationDocumentsDirectory()}/voice1.m4a',
-                  onFieldSubmitted: (text) =>
-                      translationFieldFocusNode.requestFocus(),
-                  onRecordingFileChanged: (file) {
+      appBar: AppBar(
+        elevation: 0.0,
+        title: const Text('New Word'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InfoSection(
+                caption: 'word',
+                hasText: wordController.text.isNotEmpty,
+                hasRecording: recording1 != null,
+              ),
+              RecorderUI(
+                // pathToAudioFile: ,
+                textEditingController: wordController,
+                textInputAction: TextInputAction.next,
+                onRecordingFileChanged: (file) {
+                  setState(() {
                     recording1 = file;
-                    print('recording1 = $recording1');
-                  },
-                ),
-                const SizedBox(height: 20.0),
-                InputWidget(
-                  label: 'TRANSLATION',
-                  textController: translationController,
-                  // pathToAudioFile: '${getApplicationDocumentsDirectory()}/voice2.aac',
-                  focusNode: translationFieldFocusNode,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (text) => _submit(),
-                  onRecordingFileChanged: (file) {
+                  });
+                  print('recording1 = $recording1');
+                },
+                // onFieldSubmitted: widget.onFieldSubmitted,
+              ),
+              const SizedBox(height: 20.0),
+              InfoSection(
+                caption: 'translation',
+                hasText: translationController.text.isNotEmpty,
+                hasRecording: recording2 != null,
+              ),
+              RecorderUI(
+                // pathToAudioFile: ,
+                textEditingController: translationController,
+                onRecordingFileChanged: (file) {
+                  setState(() {
                     recording2 = file;
-                    print('recording2 = $recording2');
-                  },
-                ),
-              ],
-            ),
+                  });
+                  print('recording2 = $recording2');
+                },
+                onFieldSubmitted: (text) => _submit(),
+              ),
+            ],
           ),
         ),
       ),
