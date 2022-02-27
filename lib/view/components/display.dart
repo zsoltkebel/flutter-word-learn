@@ -159,8 +159,10 @@ class _DisplayState extends State<Display> with TickerProviderStateMixin {
   }
 
   void playRecording() async {
-    await player.play();
-    _timerController.forward(from: 0.0);
+    if (_timerController.duration != null) {
+      await player.play();
+      _timerController.forward(from: 0.0);
+    }
   }
 
   void updateFile() async {
