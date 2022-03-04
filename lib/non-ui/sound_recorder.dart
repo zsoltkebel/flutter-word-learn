@@ -8,7 +8,10 @@ class SoundRecorder {
   String? pathToSaveAudioFile;
   String? pathToRecording;
 
-  SoundRecorder({this.pathToSaveAudioFile}) : record = Record();
+  SoundRecorder({
+    this.pathToSaveAudioFile,
+    this.pathToRecording,
+  }) : record = Record();
 
   bool get hasRecording => pathToRecording != null;
 

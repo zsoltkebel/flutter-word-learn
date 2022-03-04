@@ -11,10 +11,10 @@ class FirestoreManager {
         .doc(word.documentID)
         .set(
           word.toJson(),
-          SetOptions(merge: true),
-        )
-        .then((value) => print("User Updated"))
-        .catchError((error) => print("Failed to update user: $error"));
+          SetOptions(merge: false),
+        );
+        // .then((value) => print("User Updated"))
+        // .catchError((error) => print("Failed to update user: $error"));
   }
 
   static Future deleteWord(Word word) {

@@ -12,6 +12,8 @@ const maxRecordDuration = Duration(seconds: 5);
 const defaultFadeDuration = Duration(milliseconds: 400);
 
 class RecorderUI extends StatefulWidget {
+  final String? text;
+  final File? recording;
   final bool enabled;
   final Function? onRecordingStarted;
   final Function? onRecordingStopped;
@@ -26,6 +28,8 @@ class RecorderUI extends StatefulWidget {
 
   const RecorderUI({
     Key? key,
+    this.text,
+    this.recording,
     this.pathToAudioFile,
     this.onRecordingStarted,
     this.onRecordingStopped,
@@ -45,8 +49,10 @@ class RecorderUI extends StatefulWidget {
 
 class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
   // For recording and playback
-  late final recorder =
-      SoundRecorder(pathToSaveAudioFile: widget.pathToAudioFile);
+  late final recorder = SoundRecorder(
+    pathToSaveAudioFile: widget.pathToAudioFile,
+    pathToRecording: widget.recording?.path,
+  );
   final player = SoundPlayer();
 
   /// Animation controller for progress bar animation
@@ -82,6 +88,8 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
     });
 
     textFieldFocusNode.addListener(() => setState(() {}));
+
+    _initPlayer(pathToRecording: widget.recording?.path);
   }
 
   @override
@@ -191,6 +199,7 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
       );
 
   Widget _buildTextField() => TextFormField(
+        initialValue: widget.text,
         autofocus: true,
         controller: widget.textEditingController,
         focusNode: textFieldFocusNode,
@@ -335,6 +344,9 @@ class _RecorderUIState extends State<RecorderUI> with TickerProviderStateMixin {
     );
   }
 
+  void _initPlayer({String? pathToRecording}) async {
+    recordDuration = await player.setFile(path: pathToRecording);
+  }
   void _playRecording() async {
     player.play();
     widget.onPlayingStarted?.call();

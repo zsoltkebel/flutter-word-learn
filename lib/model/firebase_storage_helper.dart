@@ -39,7 +39,7 @@ class FirebaseStorageHelper {
     }
   }
 
-  static Future deleteFile({required String path}) async {
+  static Future deleteFile({required String? path}) async {
     try {
       await firebase_storage.FirebaseStorage.instance.ref(path).delete();
     } on firebase_core.FirebaseException catch (e) {
