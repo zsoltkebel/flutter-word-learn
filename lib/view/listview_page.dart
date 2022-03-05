@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:word_learn/model/firestore_manager.dart';
+import 'package:word_learn/model/folder.dart';
 import 'package:word_learn/model/word.dart';
 import 'package:word_learn/view/add_page.dart';
 import 'package:word_learn/view/components/info_icons.dart';
@@ -9,7 +10,12 @@ import 'package:word_learn/view/details_page.dart';
 import 'package:word_learn/extension/extensions.dart';
 
 class ListViewPage extends StatefulWidget {
-  const ListViewPage({Key? key}) : super(key: key);
+  final Folder? folder;
+
+  const ListViewPage({
+    Key? key,
+    this.folder,
+  }) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _ListViewPageState();
@@ -18,14 +24,33 @@ class ListViewPage extends StatefulWidget {
 class _ListViewPageState extends State<ListViewPage> {
   @override
   Widget build(BuildContext context) {
+    print(widget.folder?.documentID);
     return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.folder?.name ?? 'All words'),
+        actions: [
+          CupertinoSwitch(value: Word.reverse, onChanged: (value) {
+            setState(() {
+              Word.reverse = value;
+            });
+          })
+        ],
+      ),
       body: StreamBuilder(
-        stream: FirebaseFirestore.instance
-            .collection('words')
-            .orderBy('word')
-            .snapshots(),
+        stream: widget.folder == null
+            ? FirebaseFirestore.instance
+                .collection('words')
+                .orderBy('word')
+                .snapshots()
+            : FirebaseFirestore.instance
+                .collection('words')
+                .where('folderIDs', arrayContains: widget.folder!.documentID)
+                // .orderBy('word')
+                .snapshots(),
         builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          print(snapshot.data);
           if (!snapshot.hasData) {
+            print(snapshot.error);
             return const Center(
               child: CircularProgressIndicator(
                 backgroundColor: Colors.red,
@@ -69,8 +94,8 @@ class _ListViewPageState extends State<ListViewPage> {
                   ),
                 ),
                 child: ListTile(
-                  title: Text(word.word),
-                  subtitle: Text(word.translation),
+                  title: Text(word.firstWord),
+                  subtitle: Text(word.secondWord),
                   trailing: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -119,7 +144,9 @@ class _ListViewPageState extends State<ListViewPage> {
 
   Route _createRoute() {
     return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => AddPage(),
+      pageBuilder: (context, animation, secondaryAnimation) => AddPage(
+        folder: widget.folder,
+      ),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         const begin = Offset(0.0, 1.0);
         const end = Offset.zero;

@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:word_learn/view/folders_page.dart';
 import 'firebase_options.dart';
 
 import 'package:flutter/material.dart';
@@ -34,7 +35,8 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.cyan,
       ),
-      home: ListViewPage(),
+      // home: ListViewPage(),
+      home: FoldersPage(),
     );
   }
 }

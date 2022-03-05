@@ -2,17 +2,21 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:word_learn/model/firebase_storage_helper.dart';
 import 'package:word_learn/model/firestore_manager.dart';
+import 'package:word_learn/model/folder.dart';
 import 'package:word_learn/model/word.dart';
 import 'package:word_learn/view/components/info_section.dart';
 import 'package:word_learn/extension/extensions.dart';
-import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:word_learn/view/components/recorder_ui.dart';
 
 class AddPage extends StatefulWidget {
-  const AddPage({Key? key}) : super(key: key);
+  final Folder? folder;
+
+  const AddPage({
+    Key? key,
+    this.folder,
+  }) : super(key: key);
 
   @override
   State<AddPage> createState() => _AddPageState();
@@ -36,6 +40,7 @@ class _AddPageState extends State<AddPage> {
       Word word = Word(
         word: wordController.text,
         translation: translationController.text,
+        folderIDs: widget.folder == null ? [] : [widget.folder!.documentID!] //TODO document id check should be
       );
       words.add(word.toJson()).then((doc) async {
         print('uploaded: ${doc.id}');
@@ -95,7 +100,7 @@ class _AddPageState extends State<AddPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               InfoSection(
-                caption: 'word',
+                caption: 'Spanish',
                 hasText: wordController.text.isNotEmpty,
                 hasRecording: recording1 != null,
               ),
@@ -113,7 +118,7 @@ class _AddPageState extends State<AddPage> {
               ),
               const SizedBox(height: 20.0),
               InfoSection(
-                caption: 'translation',
+                caption: 'Hungarian',
                 hasText: translationController.text.isNotEmpty,
                 hasRecording: recording2 != null,
               ),
