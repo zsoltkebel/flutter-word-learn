@@ -42,6 +42,7 @@ dependencies:
   path_provider: ^2.0.9
   just_audio: ^0.9.20
   firebase_storage: ^10.2.7
+  firebase_auth: ^3.3.10
 
 dev_dependencies:
   flutter_test:

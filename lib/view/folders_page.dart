@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:word_learn/model/folder.dart';
-import 'package:word_learn/model/translation_entry.dart';
 import 'package:word_learn/view/components/bubble.dart';
 import 'package:word_learn/view/components/clickable.dart';
 import 'package:word_learn/view/listview_page.dart';
@@ -21,7 +21,10 @@ class _FoldersPageState extends State<FoldersPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: StreamBuilder(
-        stream: FirebaseFirestore.instance.collection('folders').snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('folders')
+            .where('owner', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+            .snapshots(),
         builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if (!snapshot.hasData) {
             return const Center(
@@ -39,29 +42,9 @@ class _FoldersPageState extends State<FoldersPage> {
                 crossAxisSpacing: 14.0,
                 mainAxisSpacing: 14.0,
               ),
-              itemCount: snapshot.data!.docs.length + 2,
+              itemCount: snapshot.data!.docs.length + 1,
               itemBuilder: (context, index) {
-                if (index == 0) {
-                  return Clickable(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ListViewPage(
-                            folder: null,
-                          ),
-                        ),
-                      );
-                    },
-                    child: Bubble(
-                      child: Center(
-                          child: Text(
-                        'All words',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      )),
-                    ),
-                  );
-                } else if (index == snapshot.data!.docs.length + 1) {
+                if (index == snapshot.data!.docs.length) {
                   return Clickable(
                     onTap: () {
                       showCupertinoDialog(
@@ -93,10 +76,19 @@ class _FoldersPageState extends State<FoldersPage> {
                               isDefaultAction: true,
                               onPressed: () {
                                 print(textEditingController.text);
+                                //TODO: fix this with UI elements to choose languages
                                 FirebaseFirestore.instance
                                     .collection('folders')
                                     .doc()
-                                    .set({'name': textEditingController.text});
+                                    .set({
+                                  'name': textEditingController.text,
+                                  'owner':
+                                      FirebaseAuth.instance.currentUser?.uid,
+                                  'lang-1': 'Spanish',
+                                  'lang-1-iso-639-1': 'es',
+                                  'lang-2': 'Hungarian',
+                                  'lang-2-iso-639-1': 'hu',
+                                });
                                 Navigator.pop(context);
                                 textEditingController.text = '';
                               },
@@ -119,7 +111,7 @@ class _FoldersPageState extends State<FoldersPage> {
                     ),
                   );
                 }
-                final doc = snapshot.data!.docs[index - 1];
+                final doc = snapshot.data!.docs[index];
                 final folder = Folder.fromSnapshot(doc);
                 return Clickable(
                   onTap: () {
@@ -140,7 +132,9 @@ class _FoldersPageState extends State<FoldersPage> {
                           folder.name,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
-                        const SizedBox(height: 10.0,),
+                        const SizedBox(
+                          height: 10.0,
+                        ),
                         Text(
                           '${folder.language1} - ${folder.language2}',
                           style: Theme.of(context).textTheme.caption,

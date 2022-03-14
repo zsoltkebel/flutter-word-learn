@@ -1,4 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:word_learn/screens/home.dart';
+import 'package:word_learn/screens/login.dart';
 import 'package:word_learn/view/folders_page.dart';
 import 'firebase_options.dart';
 
@@ -36,7 +39,17 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.cyan,
       ),
       // home: ListViewPage(),
-      home: FoldersPage(),
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          User? user = snapshot.data;
+          if (user == null) {
+            return Login();
+          } else {
+            return HomeScreen();
+          }
+        }
+      ),
     );
   }
 }
