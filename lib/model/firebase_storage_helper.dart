@@ -48,13 +48,13 @@ class FirebaseStorageHelper {
   }
 
   static Future<List<String?>> uploadFiles({
-    required Map<File?, String?> fileRefMap,
+    required Map<String, File?> fileRefMap,
   }) async {
     List<String?> storageRefs = [];
     for (final entry in fileRefMap.entries) {
-      File? file = entry.key;
-      String? ref = entry.value;
-      if (file == null || ref == null) {
+      String ref = entry.key;
+      File? file = entry.value;
+      if (file == null) {
         storageRefs.add(null);
       } else {
         storageRefs.add(await _uploadFile(file, ref));

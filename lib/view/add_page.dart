@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:word_learn/model/firebase_storage_helper.dart';
 import 'package:word_learn/model/firestore_manager.dart';
 import 'package:word_learn/model/folder.dart';
-import 'package:word_learn/model/word.dart';
+import 'package:word_learn/model/translation_entry.dart';
 import 'package:word_learn/view/components/info_section.dart';
 import 'package:word_learn/extension/extensions.dart';
 import 'package:word_learn/view/components/recorder_ui.dart';
@@ -34,32 +34,43 @@ class _AddPageState extends State<AddPage> {
   File? recording1;
   File? recording2;
 
+  TranslationEntry entry = TranslationEntry(text1: '', text2: '');
+
   void _submit() {
     if (wordController.text.isNotEmpty &&
         translationController.text.isNotEmpty) {
-      Word word = Word(
-        word: wordController.text,
-        translation: translationController.text,
-        folderIDs: widget.folder == null ? [] : [widget.folder!.documentID!] //TODO document id check should be
-      );
-      words.add(word.toJson()).then((doc) async {
-        print('uploaded: ${doc.id}');
-        word = word.copyWith(id: doc.id);
-        FirebaseStorageHelper.uploadFiles(
-          fileRefMap: {
-            recording1: 'recordings/${word.documentID!}-w.m4a',
-            recording2: 'recordings/${word.documentID!}-t.m4a',
-          },
-        ).then((storageRefs) {
-          word.storageRefToRec1 = storageRefs[0];
-          word.storageRefToRec2 = storageRefs[1];
-          FirestoreManager.updateWord(word);
-        });
 
+      entry.text1 = wordController.text;
+      entry.text2 = translationController.text;
+
+      FirestoreManager.setEntry(folder: widget.folder, entry: entry)
+          .then((value) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Added "${word.word.truncateWithEllipsis(8)}"')));
+            content: Text('Added "${entry.text1.truncateWithEllipsis(8)}"')));
         Navigator.pop(context);
-      }).catchError((error) => print("Failed to add user: $error"));
+      }).catchError((error) {
+        print("Failed to set entry: $error");
+      });
+      //     .then((doc) async {
+      //   print(doc);
+      //   print('uploaded: ${doc.id}');
+      //   entry = entry.copyWith(id: doc.id);
+      //   FirebaseStorageHelper.uploadFiles(
+      //     fileRefMap: {
+      //       recording1: 'recordings/${entry.id!}-w.m4a',
+      //       recording2: 'recordings/${entry.id!}-t.m4a',
+      //     },
+      //   ).then((storageRefs) {
+      //     entry.storageRef1 = storageRefs[0];
+      //     entry.storageRef2 = storageRefs[1];
+      //     FirestoreManager.setEntry(folder: widget.folder, entry: entry);
+      //   });
+      //
+      //   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      //       content:
+      //           Text('Added "${entry.text1.truncateWithEllipsis(8)}"')));
+      //   Navigator.pop(context);
+      // }).catchError((error) => print("Failed to add user: $error"));
     } else {
       // just return
       Navigator.pop(context);
@@ -100,7 +111,7 @@ class _AddPageState extends State<AddPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               InfoSection(
-                caption: 'Spanish',
+                caption: widget.folder!.language1,
                 hasText: wordController.text.isNotEmpty,
                 hasRecording: recording1 != null,
               ),
@@ -110,6 +121,7 @@ class _AddPageState extends State<AddPage> {
                 textInputAction: TextInputAction.next,
                 onRecordingFileChanged: (file) {
                   setState(() {
+                    entry.recording1 = file;
                     recording1 = file;
                   });
                   print('recording1 = $recording1');
@@ -118,7 +130,7 @@ class _AddPageState extends State<AddPage> {
               ),
               const SizedBox(height: 20.0),
               InfoSection(
-                caption: 'Hungarian',
+                caption: widget.folder!.language2,
                 hasText: translationController.text.isNotEmpty,
                 hasRecording: recording2 != null,
               ),
@@ -127,6 +139,7 @@ class _AddPageState extends State<AddPage> {
                 textEditingController: translationController,
                 onRecordingFileChanged: (file) {
                   setState(() {
+                    entry.recording2 = file;
                     recording2 = file;
                   });
                   print('recording2 = $recording2');

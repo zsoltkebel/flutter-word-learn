@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:word_learn/model/folder.dart';
-import 'package:word_learn/model/word.dart';
+import 'package:word_learn/model/translation_entry.dart';
 import 'package:word_learn/view/components/bubble.dart';
 import 'package:word_learn/view/components/clickable.dart';
 import 'package:word_learn/view/listview_page.dart';
@@ -56,9 +56,9 @@ class _FoldersPageState extends State<FoldersPage> {
                     child: Bubble(
                       child: Center(
                           child: Text(
-                            'All words',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          )),
+                        'All words',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      )),
                     ),
                   );
                 } else if (index == snapshot.data!.docs.length + 1) {
@@ -133,11 +133,20 @@ class _FoldersPageState extends State<FoldersPage> {
                     );
                   },
                   child: Bubble(
-                    child: Center(
-                        child: Text(
-                      folder.name,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    )),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          folder.name,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 10.0,),
+                        Text(
+                          '${folder.language1} - ${folder.language2}',
+                          style: Theme.of(context).textTheme.caption,
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },

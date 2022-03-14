@@ -1,18 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Folder {
-  final String? documentID;
+  final String? id;
   String name;
   bool reverse;
+  String language1;
+  String language2;
+  CollectionReference? entries;
 
   Folder({
-    this.documentID,
+    this.id,
     required this.name,
+    required this.language1,
+    required this.language2,
     this.reverse = false,
+    this.entries,
   });
 
   Folder.fromSnapshot(DocumentSnapshot doc)
-      : documentID = doc.id,
+      : id = doc.id,
         name = doc['name'],
-        reverse = doc['reverse'];
+        reverse = doc['reverse'],
+        language1 = doc['lang-1'],
+        language2 = doc['lang-2'],
+        entries = doc.reference.collection('entries');
 }

@@ -1,19 +1,21 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:word_learn/extension/extensions.dart';
 import 'package:word_learn/model/firebase_storage_helper.dart';
 import 'package:word_learn/model/firestore_manager.dart';
-import 'package:word_learn/model/word.dart';
+import 'package:word_learn/model/folder.dart';
+import 'package:word_learn/model/translation_entry.dart';
 import 'package:word_learn/non-ui/sound_player.dart';
 import 'package:word_learn/view/components/display.dart';
 import 'package:word_learn/view/components/info_section.dart';
 import 'package:word_learn/view/components/recorder_ui.dart';
 
 class DetailsPage extends StatefulWidget {
-  final Word word;
+  final Folder folder;
+  final TranslationEntry entry;
 
-  const DetailsPage(this.word, {Key? key}) : super(key: key);
+  const DetailsPage(this.entry, {Key? key, required this.folder})
+      : super(key: key);
 
   @override
   State<DetailsPage> createState() => _DetailsPageState();
@@ -35,24 +37,24 @@ class _DetailsPageState extends State<DetailsPage> {
   void initState() {
     super.initState();
 
-    wordController.text = widget.word.word;
-    translationController.text = widget.word.translation;
+    wordController.text = widget.entry.text1;
+    translationController.text = widget.entry.text2;
 
     FirebaseStorageHelper.downloadFiles(
-      storageRefs: [widget.word.storageRefToRec1, widget.word.storageRefToRec2],
+      storageRefs: [widget.entry.storageRef1, widget.entry.storageRef2],
     ).then((recordings) {
       setState(() {
-        widget.word.rec1 = recordings[0];
-        widget.word.rec2 = recordings[1];
+        widget.entry.recording1 = recordings[0];
+        widget.entry.recording2 = recordings[1];
       });
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    bool contentDownloading =
-        (widget.word.storageRefToRec1 != null && widget.word.rec1 == null) ||
-            (widget.word.storageRefToRec2 != null && widget.word.rec2 == null);
+    bool contentDownloading = (widget.entry.storageRef1 != null &&
+            widget.entry.recording1 == null) ||
+        (widget.entry.storageRef2 != null && widget.entry.recording2 == null);
     return Scaffold(
       appBar: AppBar(
         elevation: 0.0,
@@ -83,8 +85,8 @@ class _DetailsPageState extends State<DetailsPage> {
               children: [
                 InfoSection(
                   caption: 'word',
-                  hasText: widget.word.word.isNotEmpty,
-                  hasRecording: widget.word.rec1 != null,
+                  hasText: widget.entry.text1.isNotEmpty,
+                  hasRecording: widget.entry.recording1 != null,
                 ),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
@@ -92,20 +94,20 @@ class _DetailsPageState extends State<DetailsPage> {
                       ? RecorderUI(
                           // text: widget.word.word,
                           textEditingController: wordController,
-                          recording: widget.word.rec1,
+                          recording: widget.entry.recording1,
                           onRecordingFileChanged: (file) {
                             setState(() {
-                              widget.word.rec1 = file;
+                              widget.entry.recording1 = file;
                             });
                           },
                           onFieldSubmitted: (text) => _submit(),
                         )
                       : Display(
-                          recording: widget.word.rec1,
-                          text: widget.word.word,
+                          recording: widget.entry.recording1,
+                          text: widget.entry.text1,
                           onTextChanged: (text) {
                             setState(() {
-                              widget.word.word = text;
+                              widget.entry.text1 = text;
                             });
                           },
                         ),
@@ -115,8 +117,8 @@ class _DetailsPageState extends State<DetailsPage> {
                 ),
                 InfoSection(
                   caption: 'translation',
-                  hasText: widget.word.translation.isNotEmpty,
-                  hasRecording: widget.word.rec2 != null,
+                  hasText: widget.entry.text2.isNotEmpty,
+                  hasRecording: widget.entry.recording2 != null,
                 ),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
@@ -124,20 +126,20 @@ class _DetailsPageState extends State<DetailsPage> {
                       ? RecorderUI(
                           // text: widget.word.translation,
                           textEditingController: translationController,
-                          recording: widget.word.rec2,
+                          recording: widget.entry.recording2,
                           onRecordingFileChanged: (file) {
                             setState(() {
-                              widget.word.rec2 = file;
+                              widget.entry.recording2 = file;
                             });
                           },
                           onFieldSubmitted: (text) => _submit(),
                         )
                       : Display(
-                          recording: widget.word.rec2,
-                          text: widget.word.translation,
+                          recording: widget.entry.recording2,
+                          text: widget.entry.text2,
                           onTextChanged: (text) {
                             setState(() {
-                              widget.word.translation = text;
+                              widget.entry.text2 = text;
                             });
                           },
                         ),
@@ -175,34 +177,18 @@ class _DetailsPageState extends State<DetailsPage> {
     //TODO! cleanup logic
     if (wordController.text.isNotEmpty &&
         translationController.text.isNotEmpty) {
-      print('updating ${widget.word.documentID}');
-      widget.word.word = wordController.text;
-      widget.word.translation = translationController.text;
-      FirestoreManager.updateWord(widget.word).then((doc) {
-        FirebaseStorageHelper.uploadFiles(
-          fileRefMap: {
-            widget.word.rec1: 'recordings/${widget.word.documentID!}-w.m4a',
-            widget.word.rec2: 'recordings/${widget.word.documentID!}-t.m4a',
-          },
-        ).then((storageRefs) {
-          if (storageRefs[0] == null) {
-            FirebaseStorageHelper.deleteFile(
-                path: widget.word.storageRefToRec1);
-          }
-          if (storageRefs[1] == null) {
-            FirebaseStorageHelper.deleteFile(
-                path: widget.word.storageRefToRec2);
-          }
-          widget.word.storageRefToRec1 = storageRefs[0];
-          widget.word.storageRefToRec2 = storageRefs[1];
-          FirestoreManager.updateWord(widget.word);
-        });
+      print('updating ${widget.entry.id}');
+      widget.entry.text1 = wordController.text;
+      widget.entry.text2 = translationController.text;
+
+      FirestoreManager.setEntry(folder: widget.folder, entry: widget.entry)
+          .then((value) {
         setState(() {
           editing = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content:
-                Text('Edited "${widget.word.word.truncateWithEllipsis(8)}"')));
+            content: Text(
+                'Edited "${widget.entry.text1.truncateWithEllipsis(8)}"')));
       });
     }
   }
