@@ -1,7 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:word_learn/model/folder.dart';
 import 'package:word_learn/screens/create_collection.dart';
 import 'package:word_learn/widgets/collection_tile.dart';
@@ -13,7 +12,12 @@ class CollectionsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('folders').snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('folders')
+            // CHANGE BELOW TO SEE ALL COLLECTIONS
+            .where("can-view",
+                arrayContains: FirebaseAuth.instance.currentUser!.uid)
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting ||
               !snapshot.hasData) {
