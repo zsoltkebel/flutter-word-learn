@@ -1,14 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:word_learn/model/user_data.dart';
 import 'package:word_learn/screens/home.dart';
 import 'package:word_learn/screens/login.dart';
-import 'package:word_learn/view/folders_page.dart';
 import 'firebase_options.dart';
 
 import 'package:flutter/material.dart';
 
 import 'view/add_page.dart';
-import 'view/listview_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +26,7 @@ class MyApp extends StatelessWidget {
         appBarTheme: AppBarTheme.of(context).copyWith(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         ),
+        // scaffoldBackgroundColor: Color(0xFFFEFEFE),
         // This is the theme of your application.
         //
         // Try running your application with "flutter run". You'll see the
@@ -38,18 +38,67 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.cyan,
       ),
-      // home: ListViewPage(),
+      // home: SliverTest(
+      //   sections: [
+      //     SliverSection(
+      //       header: Text('first'),
+      //       sliver: SliverList(
+      //         delegate: SliverChildBuilderDelegate(
+      //             (context, index) => Padding(
+      //               padding: const EdgeInsets.all(20.0),
+      //               child: Text(index.toString()),
+      //             ),
+      //             childCount: 20),
+      //       ),
+      //     ),
+      //     SliverSection(
+      //       header: Text('second'),
+      //       sliver: SliverList(
+      //         delegate: SliverChildBuilderDelegate(
+      //                 (context, index) => Padding(
+      //               padding: const EdgeInsets.all(20.0),
+      //               child: Text(index.toString()),
+      //             ),
+      //             childCount: 40),
+      //       ),
+      //     ),
+      //   ],
+      // ),
       home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          User? user = snapshot.data;
-          if (user == null) {
-            return Login();
-          } else {
-            return HomeScreen();
-          }
-        }
-      ),
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              print('progress');
+              return const CircularProgressIndicator.adaptive();
+            }
+            User? user = snapshot.data;
+            print(user);
+            if (user == null) {
+              return Login();
+            } else {
+              print('logged in: ${user.uid}');
+              return FutureBuilder<UserData?>(
+                future: UserData.getUserData(uid: user.uid),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    print('waiting');
+                    return const CircularProgressIndicator.adaptive();
+                  } else if (snapshot.connectionState == ConnectionState.done) {
+                    if (snapshot.hasError) {
+                      print(snapshot.error);
+                      return const Text('Error');
+                    } else if (snapshot.hasData) {
+                      return HomeScreen(userData: snapshot.data,);
+                    } else {
+                      return const Text('Empty data');
+                    }
+                  } else {
+                    return Text('State: ${snapshot.connectionState}');
+                  }
+                },
+              );
+            }
+          }),
     );
   }
 }
@@ -74,17 +123,6 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
