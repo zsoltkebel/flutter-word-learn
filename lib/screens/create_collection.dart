@@ -28,33 +28,14 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text("New Collection"),),
       body: SafeArea(
         child: Column(
           children: [
             const Spacer(),
-            TextField(
-              controller: nameController,
-              onChanged: onValueChanged,
-              autofocus: true,
-              decoration: const InputDecoration(hintText: "Name"),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: lang1Controller,
-                    onChanged: onValueChanged,
-                    decoration: const InputDecoration(hintText: "Lang 1"),
-                  ),
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: lang2Controller,
-                    onChanged: onValueChanged,
-                    decoration: const InputDecoration(hintText: "Lang 2"),
-                  ),
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+              child: _buildInputFields(),
             ),
             const Spacer(),
             Row(
@@ -88,6 +69,41 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
       ),
     );
   }
+
+  Widget _buildInputFields() => Column(
+        children: [
+          TextField(
+            controller: nameController,
+            onChanged: onValueChanged,
+            autofocus: true,
+            decoration: const InputDecoration(hintText: "Name"),
+          ),
+          const SizedBox(
+            height: 10.0,
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: lang1Controller,
+                  onChanged: onValueChanged,
+                  decoration: const InputDecoration(hintText: "Lang 1"),
+                ),
+              ),
+              const SizedBox(
+                width: 10.0,
+              ),
+              Expanded(
+                child: TextField(
+                  controller: lang2Controller,
+                  onChanged: onValueChanged,
+                  decoration: const InputDecoration(hintText: "Lang 2"),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
 
   void onValueChanged(String text) {
     setState(() {
