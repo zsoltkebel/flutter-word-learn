@@ -5,7 +5,7 @@ import 'package:word_learn/model/folder.dart';
 
 import 'package:word_learn/view/components/bubble.dart';
 import 'package:word_learn/view/components/clickable.dart';
-import 'package:word_learn/view/listview_page.dart';
+import 'package:word_learn/screens/collection.dart';
 
 class CollectionTile extends StatelessWidget {
   final Folder folder;
@@ -20,7 +20,7 @@ class CollectionTile extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (context) =>
-                ListViewPage(
+                CollectionPage(
                   folder: folder,
                 ),
           ),

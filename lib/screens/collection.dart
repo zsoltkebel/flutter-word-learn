@@ -6,25 +6,23 @@ import 'package:word_learn/model/firestore_manager.dart';
 import 'package:word_learn/model/folder.dart';
 import 'package:word_learn/model/translation_entry.dart';
 import 'package:word_learn/view/add_page.dart';
-import 'package:word_learn/view/components/bubble.dart';
-import 'package:word_learn/view/components/clickable.dart';
 import 'package:word_learn/view/components/info_icons.dart';
 import 'package:word_learn/view/details_page.dart';
 import 'package:word_learn/extension/extensions.dart';
 
-class ListViewPage extends StatefulWidget {
+class CollectionPage extends StatefulWidget {
   final Folder? folder;
 
-  const ListViewPage({
+  const CollectionPage({
     Key? key,
     this.folder,
   }) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _ListViewPageState();
+  State<StatefulWidget> createState() => _CollectionPageState();
 }
 
-class _ListViewPageState extends State<ListViewPage> {
+class _CollectionPageState extends State<CollectionPage> {
   bool reverse = false;
 
   @override
@@ -46,7 +44,10 @@ class _ListViewPageState extends State<ListViewPage> {
             title: Text(widget.folder?.name ?? ''),
             // Allows the user to reveal the app bar if they begin scrolling
             // back up the list of items.
-            actions: [],
+            actions: [
+              IconButton(onPressed: _onReversePressed, icon: const Icon(Icons.swap_vert)),
+              IconButton(onPressed: _onCreatePressed, icon: const Icon(Icons.add))
+            ],
             floating: true,
             // Display a placeholder widget to visualize the shrinking size.
             // flexibleSpace: Center(
@@ -54,58 +55,6 @@ class _ListViewPageState extends State<ListViewPage> {
             // ),
             // Make the initial height of the SliverAppBar larger than normal.
             // expandedHeight: 200,
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.all(14.0),
-            sliver: SliverGrid(
-              delegate: SliverChildListDelegate([
-                Clickable(
-                  child: Bubble(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('Reversed'),
-                        CupertinoSwitch(
-                            value: reverse,
-                            onChanged: (value) {
-                              setState(() {
-                                reverse = value;
-                                reverse
-                                    ? FirebaseFirestore.instance
-                                        .collection("folders")
-                                        .doc(widget.folder!.id)
-                                        .update({
-                                        "reverse-for": FieldValue.arrayUnion([
-                                          FirebaseAuth.instance.currentUser!.uid
-                                        ])
-                                      })
-                                    : FirebaseFirestore.instance
-                                        .collection("folders")
-                                        .doc(widget.folder!.id)
-                                        .update({
-                                        "reverse-for": FieldValue.arrayRemove([
-                                          FirebaseAuth.instance.currentUser!.uid
-                                        ])
-                                      });
-                              });
-                            }),
-                      ],
-                    ),
-                  ),
-                ),
-                Clickable(
-                  onTap: () => Navigator.of(context).push(_createRoute()),
-                  child: Bubble(
-                    child: Icon(Icons.add),
-                  ),
-                ),
-              ]),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisExtent: 80.0,
-                  crossAxisSpacing: 14.0,
-                  mainAxisSpacing: 14.0),
-            ),
           ),
           StreamBuilder<QuerySnapshot>(
               stream: widget.folder == null
@@ -238,5 +187,32 @@ class _ListViewPageState extends State<ListViewPage> {
         );
       },
     );
+  }
+
+  void _onReversePressed() {
+    setState(() {
+      reverse = !reverse;
+      reverse
+          ? FirebaseFirestore.instance
+          .collection("folders")
+          .doc(widget.folder!.id)
+          .update({
+        "reverse-for": FieldValue.arrayUnion([
+          FirebaseAuth.instance.currentUser!.uid
+        ])
+      })
+          : FirebaseFirestore.instance
+          .collection("folders")
+          .doc(widget.folder!.id)
+          .update({
+        "reverse-for": FieldValue.arrayRemove([
+          FirebaseAuth.instance.currentUser!.uid
+        ])
+      });
+    });
+  }
+
+  void _onCreatePressed() {
+    Navigator.of(context).push(_createRoute());
   }
 }
