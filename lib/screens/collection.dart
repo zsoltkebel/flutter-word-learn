@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:word_learn/model/firestore_manager.dart';
@@ -101,10 +100,10 @@ class _CollectionPageState extends State<CollectionPage> {
                         },
                         background: Container(
                           color: Colors.red,
-                          child: Align(
+                          child: const Align(
                             alignment: Alignment.centerRight,
                             child: Padding(
-                              padding: const EdgeInsets.only(right: 20.0),
+                              padding: EdgeInsets.only(right: 20.0),
                               child: Icon(
                                 Icons.delete,
                                 color: Colors.white,
@@ -160,8 +159,8 @@ class _CollectionPageState extends State<CollectionPage> {
             //   MaterialPageRoute(builder: (context) => AddPage()),
             // );
           },
-          label: Text('New Word'),
-          icon: Icon(
+          label: const Text('New Word'),
+          icon: const Icon(
             Icons.add,
             semanticLabel: 'helo',
           )),
