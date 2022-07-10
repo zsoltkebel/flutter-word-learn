@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:word_learn/model/firestore_manager.dart';
 import 'package:word_learn/model/folder.dart';
 import 'package:word_learn/model/translation_entry.dart';
+import 'package:word_learn/screens/collection_details_input.dart';
 import 'package:word_learn/view/add_page.dart';
 import 'package:word_learn/view/components/info_icons.dart';
 import 'package:word_learn/view/details_page.dart';
@@ -40,12 +41,21 @@ class _CollectionPageState extends State<CollectionPage> {
         slivers: [
           SliverAppBar(
             // Provide a standard title.
-            title: Text(widget.folder?.name ?? ''),
+            title: GestureDetector(
+              onTap: _onChangeDetailsPressed,
+              child: Text(widget.folder?.name ?? ''),
+            ),
             // Allows the user to reveal the app bar if they begin scrolling
             // back up the list of items.
             actions: [
-              IconButton(onPressed: _onReversePressed, icon: const Icon(Icons.swap_vert)),
-              IconButton(onPressed: _onCreatePressed, icon: const Icon(Icons.add))
+              //TODO implement share functionality
+              const IconButton(
+                  onPressed: null, icon: Icon(Icons.person_add_alt)),
+              IconButton(
+                  onPressed: _onReversePressed,
+                  icon: const Icon(Icons.swap_vert)),
+              IconButton(
+                  onPressed: _onCreatePressed, icon: const Icon(Icons.add))
             ],
             floating: true,
             // Display a placeholder widget to visualize the shrinking size.
@@ -61,7 +71,9 @@ class _CollectionPageState extends State<CollectionPage> {
                       .collection('words')
                       .orderBy('word')
                       .snapshots()
-                  : widget.folder!.entries?.snapshots(),
+                  : widget.folder!.entries
+                      ?.orderBy(reverse ? 'text-2' : 'text-1')
+                      .snapshots(),
               builder: (context, snapshot) {
                 print(snapshot.data);
                 if (!snapshot.hasData) {
@@ -191,27 +203,36 @@ class _CollectionPageState extends State<CollectionPage> {
   void _onReversePressed() {
     setState(() {
       reverse = !reverse;
-      reverse
-          ? FirebaseFirestore.instance
-          .collection("folders")
-          .doc(widget.folder!.id)
-          .update({
-        "reverse-for": FieldValue.arrayUnion([
-          FirebaseAuth.instance.currentUser!.uid
-        ])
-      })
-          : FirebaseFirestore.instance
-          .collection("folders")
-          .doc(widget.folder!.id)
-          .update({
-        "reverse-for": FieldValue.arrayRemove([
-          FirebaseAuth.instance.currentUser!.uid
-        ])
-      });
     });
+    reverse
+        ? FirebaseFirestore.instance
+            .collection("folders")
+            .doc(widget.folder!.id)
+            .update({
+            "reverse-for":
+                FieldValue.arrayUnion([FirebaseAuth.instance.currentUser!.uid])
+          })
+        : FirebaseFirestore.instance
+            .collection("folders")
+            .doc(widget.folder!.id)
+            .update({
+            "reverse-for":
+                FieldValue.arrayRemove([FirebaseAuth.instance.currentUser!.uid])
+          });
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+            'Primary language: ${reverse ? widget.folder!.language2 : widget.folder!.language1}')));
   }
 
   void _onCreatePressed() {
     Navigator.of(context).push(_createRoute());
+  }
+
+  void _onChangeDetailsPressed() {
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) => CollectionDetailsInputPage(
+              collection: widget.folder,
+            )));
   }
 }

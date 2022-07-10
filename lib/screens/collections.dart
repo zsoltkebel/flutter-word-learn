@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:word_learn/model/folder.dart';
-import 'package:word_learn/screens/create_collection.dart';
+import 'package:word_learn/screens/collection_details_input.dart';
 import 'package:word_learn/widgets/collection_tile.dart';
 
 class CollectionsPage extends StatelessWidget {
@@ -39,7 +39,7 @@ class CollectionsPage extends StatelessWidget {
         child: const Icon(Icons.add),
         onPressed: () {
           Navigator.of(context).push(MaterialPageRoute(
-              builder: (context) => const CreateCollectionPage()));
+              builder: (context) => const CollectionDetailsInputPage()));
         },
       ),
     );

@@ -2,20 +2,34 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:word_learn/model/folder.dart';
 
-class CreateCollectionPage extends StatefulWidget {
-  const CreateCollectionPage({Key? key}) : super(key: key);
+class CollectionDetailsInputPage extends StatefulWidget {
+  final Folder? collection;
+
+  const CollectionDetailsInputPage({Key? key, this.collection}) : super(key: key);
 
   @override
-  State<CreateCollectionPage> createState() => _CreateCollectionPageState();
+  State<CollectionDetailsInputPage> createState() => _CollectionDetailsInputPageState();
 }
 
-class _CreateCollectionPageState extends State<CreateCollectionPage> {
+class _CollectionDetailsInputPageState extends State<CollectionDetailsInputPage> {
   bool missingDetails = true;
 
   final nameController = TextEditingController();
   final lang1Controller = TextEditingController();
   final lang2Controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.collection != null) {
+      nameController.text = widget.collection!.name;
+      lang1Controller.text = widget.collection!.language1;
+      lang2Controller.text = widget.collection!.language2;
+      _checkMissingDetail();
+    }
+  }
 
   @override
   void dispose() {
@@ -28,7 +42,9 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("New Collection"),),
+      appBar: AppBar(
+        title: const Text('Collection'),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -46,7 +62,7 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(primary: Colors.red),
-                    child: const Text("Cancel"),
+                    child: const Text('Cancel'),
                     onPressed: onCancelPressed,
                   ),
                 ),
@@ -55,7 +71,7 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
                 ),
                 Expanded(
                   child: OutlinedButton(
-                    child: const Text("Create"),
+                    child: Text(widget.collection != null ? 'Done' : 'Create'),
                     onPressed: missingDetails ? null : onCreatePressed,
                   ),
                 ),
@@ -74,9 +90,9 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
         children: [
           TextField(
             controller: nameController,
-            onChanged: onValueChanged,
+            onChanged: (text) => _checkMissingDetail(),
             autofocus: true,
-            decoration: const InputDecoration(hintText: "Name"),
+            decoration: const InputDecoration(hintText: 'Name'),
           ),
           const SizedBox(
             height: 10.0,
@@ -86,8 +102,8 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
               Expanded(
                 child: TextField(
                   controller: lang1Controller,
-                  onChanged: onValueChanged,
-                  decoration: const InputDecoration(hintText: "Lang 1"),
+                  onChanged: (text) => _checkMissingDetail(),
+                  decoration: const InputDecoration(hintText: 'Lang 1'),
                 ),
               ),
               const SizedBox(
@@ -96,8 +112,8 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
               Expanded(
                 child: TextField(
                   controller: lang2Controller,
-                  onChanged: onValueChanged,
-                  decoration: const InputDecoration(hintText: "Lang 2"),
+                  onChanged: (text) => _checkMissingDetail(),
+                  decoration: const InputDecoration(hintText: 'Lang 2'),
                 ),
               ),
             ],
@@ -105,7 +121,7 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
         ],
       );
 
-  void onValueChanged(String text) {
+  void _checkMissingDetail() {
     setState(() {
       missingDetails = nameController.text.isEmpty ||
           lang1Controller.text.isEmpty ||
@@ -129,17 +145,17 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
     final canView = [FirebaseAuth.instance.currentUser!.uid];
 
     FirebaseFirestore.instance
-        .collection("folders")
-        .doc()
+        .collection('folders')
+        .doc(widget.collection?.id)
         .set({
-          "name": name,
-          "lang-1": lang1,
-          "lang-2": lang2,
-          "owner-id": ownerID,
-          "owner-name": ownerName,
-          "can-view": canView,
-          "reverse-for": [],
-          "members": {},
+          'name': name,
+          'lang-1': lang1,
+          'lang-2': lang2,
+          'owner-id': ownerID,
+          'owner-name': ownerName,
+          'can-view': canView,
+          'reverse-for': widget.collection?.reverseFor ?? [],
+          'members': {},
         })
         .then((value) => Navigator.pop(context))
         .onError((error, stackTrace) => print(error));
