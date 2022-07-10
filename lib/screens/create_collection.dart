@@ -138,7 +138,7 @@ class _CreateCollectionPageState extends State<CreateCollectionPage> {
           "owner-id": ownerID,
           "owner-name": ownerName,
           "can-view": canView,
-          "reverse": false,
+          "reverse-for": [],
           "members": {},
         })
         .then((value) => Navigator.pop(context))

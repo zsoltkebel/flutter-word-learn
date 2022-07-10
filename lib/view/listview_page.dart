@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -27,6 +28,14 @@ class _ListViewPageState extends State<ListViewPage> {
   bool reverse = false;
 
   @override
+  void initState() {
+    super.initState();
+
+    reverse = widget.folder!.reverseFor
+        .contains(FirebaseAuth.instance.currentUser!.uid);
+  }
+
+  @override
   Widget build(BuildContext context) {
     print(widget.folder?.id);
     return Scaffold(
@@ -37,9 +46,7 @@ class _ListViewPageState extends State<ListViewPage> {
             title: Text(widget.folder?.name ?? ''),
             // Allows the user to reveal the app bar if they begin scrolling
             // back up the list of items.
-            actions: [
-
-            ],
+            actions: [],
             floating: true,
             // Display a placeholder widget to visualize the shrinking size.
             // flexibleSpace: Center(
@@ -63,6 +70,23 @@ class _ListViewPageState extends State<ListViewPage> {
                             onChanged: (value) {
                               setState(() {
                                 reverse = value;
+                                reverse
+                                    ? FirebaseFirestore.instance
+                                        .collection("folders")
+                                        .doc(widget.folder!.id)
+                                        .update({
+                                        "reverse-for": FieldValue.arrayUnion([
+                                          FirebaseAuth.instance.currentUser!.uid
+                                        ])
+                                      })
+                                    : FirebaseFirestore.instance
+                                        .collection("folders")
+                                        .doc(widget.folder!.id)
+                                        .update({
+                                        "reverse-for": FieldValue.arrayRemove([
+                                          FirebaseAuth.instance.currentUser!.uid
+                                        ])
+                                      });
                               });
                             }),
                       ],
@@ -77,11 +101,10 @@ class _ListViewPageState extends State<ListViewPage> {
                 ),
               ]),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisExtent: 80.0,
-                crossAxisSpacing: 14.0,
-                mainAxisSpacing: 14.0
-              ),
+                  crossAxisCount: 2,
+                  mainAxisExtent: 80.0,
+                  crossAxisSpacing: 14.0,
+                  mainAxisSpacing: 14.0),
             ),
           ),
           StreamBuilder<QuerySnapshot>(
