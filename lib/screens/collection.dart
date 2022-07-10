@@ -5,6 +5,7 @@ import 'package:word_learn/model/firestore_manager.dart';
 import 'package:word_learn/model/folder.dart';
 import 'package:word_learn/model/translation_entry.dart';
 import 'package:word_learn/screens/collection_details_input.dart';
+import 'package:word_learn/screens/user_selection.dart';
 import 'package:word_learn/view/add_page.dart';
 import 'package:word_learn/view/components/info_icons.dart';
 import 'package:word_learn/view/details_page.dart';
@@ -49,8 +50,8 @@ class _CollectionPageState extends State<CollectionPage> {
             // back up the list of items.
             actions: [
               //TODO implement share functionality
-              const IconButton(
-                  onPressed: null, icon: Icon(Icons.person_add_alt)),
+              IconButton(
+                  onPressed: _onSharePressed, icon: Icon(Icons.person_add_alt)),
               IconButton(
                   onPressed: _onReversePressed,
                   icon: const Icon(Icons.swap_vert)),
@@ -223,6 +224,22 @@ class _CollectionPageState extends State<CollectionPage> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
             'Primary language: ${reverse ? widget.folder!.language2 : widget.folder!.language1}')));
+  }
+
+  void _onSharePressed() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => UserSelectionScreen(
+          uids: Set.from(widget.folder?.visibleFor ?? []),
+          onSelected: (users) {
+            FirebaseFirestore.instance
+                .collection("folders")
+                .doc(widget.folder!.id)
+                .update({"can-view": users.map((user) => user.uid).toList()});
+          },
+        ),
+      ),
+    );
   }
 
   void _onCreatePressed() {

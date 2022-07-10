@@ -5,8 +5,8 @@ class Folder {
   String name;
   String owner; // uid of owner
   String ownerName;
-  bool reverse;
   List<String> reverseFor;
+  List<String> visibleFor;
   String language1;
   String language2;
   CollectionReference? entries;
@@ -23,16 +23,16 @@ class Folder {
     this.owner = '',
     this.ownerName = '',
     this.members = const {},
-    this.reverse = false,
     this.reverseFor = const [],
+    this.visibleFor = const [],
     this.entries,
   });
 
   Folder.fromSnapshot(DocumentSnapshot doc)
       : id = doc.id,
         name = doc['name'],
-        reverse = doc['reverse'],
         reverseFor = List.from(doc['reverse-for']),
+        visibleFor = List.from(doc['can-view']),
         language1 = doc['lang-1'],
         language2 = doc['lang-2'],
         entries = doc.reference.collection('entries'),
