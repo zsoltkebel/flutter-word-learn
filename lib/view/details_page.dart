@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:word_learn/extension/extensions.dart';
 import 'package:word_learn/model/firebase_storage_helper.dart';
 import 'package:word_learn/model/firestore_manager.dart';
-import 'package:word_learn/model/folder.dart';
-import 'package:word_learn/model/translation_entry.dart';
+import 'package:word_learn/model/trans_collection.dart';
+import 'package:word_learn/model/trans_entry.dart';
 import 'package:word_learn/non-ui/sound_player.dart';
 import 'package:word_learn/view/components/display.dart';
 import 'package:word_learn/view/components/info_section.dart';
 import 'package:word_learn/view/components/recorder_ui.dart';
 
 class DetailsPage extends StatefulWidget {
-  final Folder folder;
-  final TranslationEntry entry;
+  final TransCollection folder;
+  final TransEntry entry;
 
   const DetailsPage(this.entry, {Key? key, required this.folder})
       : super(key: key);

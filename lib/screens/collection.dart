@@ -2,8 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:word_learn/model/firestore_manager.dart';
-import 'package:word_learn/model/folder.dart';
-import 'package:word_learn/model/translation_entry.dart';
+import 'package:word_learn/model/trans_collection.dart';
+import 'package:word_learn/model/trans_entry.dart';
 import 'package:word_learn/screens/collection_details_input.dart';
 import 'package:word_learn/screens/user_selection.dart';
 import 'package:word_learn/view/add_page.dart';
@@ -13,7 +13,7 @@ import 'package:word_learn/extension/extensions.dart';
 import 'dart:developer' as developer;
 
 class CollectionPage extends StatefulWidget {
-  final Folder folder;
+  final TransCollection folder;
 
   const CollectionPage({
     Key? key,
@@ -87,8 +87,8 @@ class _CollectionPageState extends State<CollectionPage> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final doc = snapshot.data!.docs[index];
-                        TranslationEntry word =
-                            TranslationEntry.fromSnapshot(doc);
+                        TransEntry word =
+                            TransEntry.fromSnapshot(doc);
                         return Dismissible(
                           direction: DismissDirection.endToStart,
                           key: UniqueKey(),

@@ -2,10 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:word_learn/model/folder.dart';
+import 'package:word_learn/model/trans_collection.dart';
 
 class CollectionDetailsInputPage extends StatefulWidget {
-  final Folder? collection;
+  final TransCollection? collection;
 
   const CollectionDetailsInputPage({Key? key, this.collection}) : super(key: key);
 

@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:word_learn/model/friend_model.dart';
+import 'package:word_learn/model/custom_user_info.dart';
 
-typedef OnUserSelected = void Function(List<UserInfoModel> uids);
+typedef OnUserSelected = void Function(List<CustomUserInfo> uids);
 
 class UserSelectionScreen extends StatefulWidget {
   final Set<String>? uids; // uid-s of the initially selected users
@@ -22,9 +22,9 @@ class UserSelectionScreen extends StatefulWidget {
 class _UserSelectionScreenState extends State<UserSelectionScreen> {
   final textEditingController = TextEditingController();
 
-  List<UserInfoModel> users = [];
-  List<UserInfoModel> matches = [];
-  List<UserInfoModel>? selected;
+  List<CustomUserInfo> users = [];
+  List<CustomUserInfo> matches = [];
+  List<CustomUserInfo>? selected;
 
   @override
   dispose() {
@@ -50,7 +50,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             users =
-                snapshot.data!.docs.map(UserInfoModel.fromSnapshot).toList();
+                snapshot.data!.docs.map(CustomUserInfo.fromSnapshot).toList();
             selected ??= users
                 .where((user) => widget.uids?.contains(user.uid) ?? false)
                 .toList();
@@ -144,7 +144,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
         },
       );
 
-  Widget _buildUserListTile(UserInfoModel usr) {
+  Widget _buildUserListTile(CustomUserInfo usr) {
     if (usr.uid == FirebaseAuth.instance.currentUser?.uid) {
       return Container(); // Do not show current user among results
     }

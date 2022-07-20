@@ -1,14 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import 'package:word_learn/model/folder.dart';
+import 'package:word_learn/model/trans_collection.dart';
 
 import 'package:word_learn/view/components/bubble.dart';
 import 'package:word_learn/view/components/clickable.dart';
 import 'package:word_learn/screens/collection.dart';
 
 class CollectionTile extends StatelessWidget {
-  final Folder folder;
+  final TransCollection folder;
 
   const CollectionTile({Key? key, required this.folder}) : super(key: key);
 

@@ -4,14 +4,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:word_learn/model/firebase_storage_helper.dart';
 import 'package:word_learn/model/firestore_manager.dart';
-import 'package:word_learn/model/folder.dart';
-import 'package:word_learn/model/translation_entry.dart';
+import 'package:word_learn/model/trans_collection.dart';
+import 'package:word_learn/model/trans_entry.dart';
 import 'package:word_learn/view/components/info_section.dart';
 import 'package:word_learn/extension/extensions.dart';
 import 'package:word_learn/view/components/recorder_ui.dart';
 
 class AddPage extends StatefulWidget {
-  final Folder? folder;
+  final TransCollection? folder;
 
   const AddPage({
     Key? key,
@@ -34,7 +34,7 @@ class _AddPageState extends State<AddPage> {
   File? recording1;
   File? recording2;
 
-  TranslationEntry entry = TranslationEntry(text1: '', text2: '');
+  TransEntry entry = TransEntry(text1: '', text2: '');
 
   void _submit() {
     if (wordController.text.isNotEmpty &&

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:word_learn/model/friend_model.dart';
+import 'package:word_learn/model/custom_user_info.dart';
 
 import 'package:word_learn/view/components/bubble.dart';
 import 'package:word_learn/view/components/clickable.dart';
 
 class FriendTile extends StatelessWidget {
-  final UserInfoModel friend;
+  final CustomUserInfo friend;
 
   const FriendTile({Key? key, required this.friend}) : super(key: key);
 
