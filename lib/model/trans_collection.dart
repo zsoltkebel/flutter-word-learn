@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class Folder {
+/// Translation Collection
+class TransCollection {
   final String? id;
   String name;
   String owner; // uid of owner
@@ -15,7 +16,7 @@ class Folder {
   get shared =>
       members.keys.length > 0; //TODO more elaborate check with owner id ...
 
-  Folder({
+  TransCollection({
     this.id,
     required this.name,
     required this.language1,
@@ -28,7 +29,7 @@ class Folder {
     this.entries,
   });
 
-  Folder.fromSnapshot(DocumentSnapshot doc)
+  TransCollection.fromSnapshot(DocumentSnapshot doc)
       : id = doc.id,
         name = doc['name'],
         reverseFor = List.from(doc['reverse-for']),

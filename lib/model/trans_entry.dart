@@ -7,7 +7,8 @@ const text2Key = 'text-2';
 const storageRef1Key = 'storage-ref-1';
 const storageRef2Key = 'storage-ref-2';
 
-class TranslationEntry {
+/// Translation Entry
+class TransEntry {
   final String? id;
   String text1;
   String text2;
@@ -17,7 +18,7 @@ class TranslationEntry {
   File? recording1; // local recording file
   File? recording2; // local recording file
 
-  TranslationEntry({
+  TransEntry({
     required this.text1,
     required this.text2,
     this.id,
@@ -27,7 +28,7 @@ class TranslationEntry {
     this.recording2,
   });
 
-  TranslationEntry.fromSnapshot(QueryDocumentSnapshot doc)
+  TransEntry.fromSnapshot(QueryDocumentSnapshot doc)
       : id = doc.id,
         text1 = doc[text1Key],
         text2 = doc[text2Key] {
@@ -58,8 +59,8 @@ class TranslationEntry {
     }
   }
 
-  TranslationEntry copyWith({required String id}) {
-    return TranslationEntry(
+  TransEntry copyWith({required String id}) {
+    return TransEntry(
       text1: text1,
       text2: text2,
       id: id,
