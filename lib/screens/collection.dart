@@ -10,13 +10,14 @@ import 'package:word_learn/view/add_page.dart';
 import 'package:word_learn/view/components/info_icons.dart';
 import 'package:word_learn/view/details_page.dart';
 import 'package:word_learn/extension/extensions.dart';
+import 'dart:developer' as developer;
 
 class CollectionPage extends StatefulWidget {
-  final Folder? folder;
+  final Folder folder;
 
   const CollectionPage({
     Key? key,
-    this.folder,
+    required this.folder,
   }) : super(key: key);
 
   @override
@@ -24,159 +25,150 @@ class CollectionPage extends StatefulWidget {
 }
 
 class _CollectionPageState extends State<CollectionPage> {
-  bool reverse = false;
-
-  @override
-  void initState() {
-    super.initState();
-
-    reverse = widget.folder!.reverseFor
-        .contains(FirebaseAuth.instance.currentUser!.uid);
-  }
+  late bool reverse =
+      widget.folder.reverseFor.contains(FirebaseAuth.instance.currentUser!.uid);
 
   @override
   Widget build(BuildContext context) {
-    print(widget.folder?.id);
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            // Provide a standard title.
-            title: GestureDetector(
-              onTap: _onChangeDetailsPressed,
-              child: Text(widget.folder?.name ?? ''),
+    developer.log('Trying to load collection with id: ${widget.folder.id}');
+
+    final stream = widget.folder.entries
+        ?.orderBy(reverse ? 'text-2' : 'text-1')
+        .snapshots();
+    return WillPopScope(
+      onWillPop: () {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        return Future.value(true);
+      },
+      child: Scaffold(
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              title: GestureDetector(
+                onTap: _onChangeDetailsPressed,
+                child: Text(widget.folder.name),
+              ),
+              actions: [
+                IconButton(
+                    onPressed: _onSharePressed,
+                    icon: const Icon(Icons.person_add_alt)),
+                IconButton(
+                    onPressed: _onReversePressed,
+                    icon: const Icon(Icons.swap_vert)),
+                IconButton(
+                    onPressed: _onCreatePressed, icon: const Icon(Icons.add))
+              ],
+              floating: true,
             ),
-            // Allows the user to reveal the app bar if they begin scrolling
-            // back up the list of items.
-            actions: [
-              //TODO implement share functionality
-              IconButton(
-                  onPressed: _onSharePressed, icon: Icon(Icons.person_add_alt)),
-              IconButton(
-                  onPressed: _onReversePressed,
-                  icon: const Icon(Icons.swap_vert)),
-              IconButton(
-                  onPressed: _onCreatePressed, icon: const Icon(Icons.add))
-            ],
-            floating: true,
-            // Display a placeholder widget to visualize the shrinking size.
-            // flexibleSpace: Center(
-            //   child: Text('hello'),
-            // ),
-            // Make the initial height of the SliverAppBar larger than normal.
-            // expandedHeight: 200,
-          ),
-          StreamBuilder<QuerySnapshot>(
-              stream: widget.folder == null
-                  ? FirebaseFirestore.instance
-                      .collection('words')
-                      .orderBy('word')
-                      .snapshots()
-                  : widget.folder!.entries
-                      ?.orderBy(reverse ? 'text-2' : 'text-1')
-                      .snapshots(),
-              builder: (context, snapshot) {
-                print(snapshot.data);
-                if (!snapshot.hasData) {
-                  print(snapshot.error);
-                  return const SliverFillRemaining(
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
+            StreamBuilder<QuerySnapshot>(
+                stream: stream,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SliverFillRemaining(
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.teal),
+                        ),
                       ),
-                    ),
-                  );
-                }
-                return SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final doc = snapshot.data!.docs[index];
-                      TranslationEntry word =
-                          TranslationEntry.fromSnapshot(doc);
-                      return Dismissible(
-                        direction: DismissDirection.endToStart,
-                        key: UniqueKey(),
-                        onDismissed: (direction) {
-                          // Remove the item from the data source.
-                          setState(() {
-                            // immediately remove widget from tree
-                            snapshot.data!.docs.removeAt(index);
+                    );
+                  }
+                  if (snapshot.hasError) {
+                    developer.log('Error while fetching data from Firestore',
+                        error: snapshot.error);
+                    return const SliverFillRemaining(
+                      child: Center(
+                          child: Text('Oops... Something went wrong :/')),
+                    );
+                  }
+                  developer
+                      .log('Collection with id: ${widget.folder.id} is loaded');
+                  return SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final doc = snapshot.data!.docs[index];
+                        TranslationEntry word =
+                            TranslationEntry.fromSnapshot(doc);
+                        return Dismissible(
+                          direction: DismissDirection.endToStart,
+                          key: UniqueKey(),
+                          onDismissed: (direction) {
+                            // Remove the item from the data source.
+                            setState(() {
+                              // immediately remove widget from tree
+                              snapshot.data!.docs.removeAt(index);
 
-                            FirestoreManager.deleteEntryAndFiles(
-                                widget.folder!, word);
-                          });
+                              FirestoreManager.deleteEntryAndFiles(
+                                  widget.folder, word);
+                            });
 
-                          // Then show a snackbar
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text(
-                                  'Deleted "${word.text1.truncateWithEllipsis(8)}"')));
-                        },
-                        background: Container(
-                          color: Colors.red,
-                          child: const Align(
-                            alignment: Alignment.centerRight,
-                            child: Padding(
-                              padding: EdgeInsets.only(right: 20.0),
-                              child: Icon(
-                                Icons.delete,
-                                color: Colors.white,
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text(
+                                    'Deleted "${word.text1.truncateWithEllipsis(8)}"')));
+                          },
+                          background: Container(
+                            color: Colors.red,
+                            child: const Align(
+                              alignment: Alignment.centerRight,
+                              child: Padding(
+                                padding: EdgeInsets.only(right: 20.0),
+                                child: Icon(
+                                  Icons.delete,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        child: ListTile(
-                          title: Text(reverse ? word.text2 : word.text1),
-                          subtitle: Text(reverse ? word.text1 : word.text2),
-                          trailing: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              InfoIcons(
-                                hasText: word.text1.isNotEmpty,
-                                hasRecording: word.storageRef1 != null,
-                              ),
-                              const SizedBox(
-                                height: 4.0,
-                              ),
-                              InfoIcons(
-                                hasText: word.text2.isNotEmpty,
-                                hasRecording: word.storageRef2 != null,
-                              ),
-                            ],
+                          child: ListTile(
+                            title: Text(reverse ? word.text2 : word.text1),
+                            subtitle: Text(reverse ? word.text1 : word.text2),
+                            trailing: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                InfoIcons(
+                                  hasText: word.text1.isNotEmpty,
+                                  hasRecording: word.storageRef1 != null,
+                                ),
+                                const SizedBox(
+                                  height: 4.0,
+                                ),
+                                InfoIcons(
+                                  hasText: word.text2.isNotEmpty,
+                                  hasRecording: word.storageRef2 != null,
+                                ),
+                              ],
+                            ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => DetailsPage(
+                                          word,
+                                          folder: widget.folder,
+                                        )),
+                              );
+                            },
                           ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => DetailsPage(
-                                        word,
-                                        folder: widget.folder!,
-                                      )),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                    // Builds 1000 ListTiles
-                    childCount: snapshot.data?.docs.length,
-                  ),
-                );
-              }),
-        ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: FloatingActionButton.extended(
+                        );
+                      },
+                      childCount: snapshot.data?.docs.length,
+                    ),
+                  );
+                }),
+          ],
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        floatingActionButton: FloatingActionButton.extended(
           onPressed: () {
             Navigator.of(context).push(_createRoute());
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(builder: (context) => AddPage()),
-            // );
           },
           label: const Text('New Word'),
           icon: const Icon(
             Icons.add,
             semanticLabel: 'helo',
-          )),
+          ),
+        ),
+      ),
     );
   }
 
@@ -208,14 +200,14 @@ class _CollectionPageState extends State<CollectionPage> {
     reverse
         ? FirebaseFirestore.instance
             .collection("folders")
-            .doc(widget.folder!.id)
+            .doc(widget.folder.id)
             .update({
             "reverse-for":
                 FieldValue.arrayUnion([FirebaseAuth.instance.currentUser!.uid])
           })
         : FirebaseFirestore.instance
             .collection("folders")
-            .doc(widget.folder!.id)
+            .doc(widget.folder.id)
             .update({
             "reverse-for":
                 FieldValue.arrayRemove([FirebaseAuth.instance.currentUser!.uid])
@@ -223,20 +215,20 @@ class _CollectionPageState extends State<CollectionPage> {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
-            'Primary language: ${reverse ? widget.folder!.language2 : widget.folder!.language1}')));
+            'Primary language: ${reverse ? widget.folder.language2 : widget.folder.language1}')));
   }
 
   void _onSharePressed() {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => UserSelectionScreen(
-          uids: Set.from(widget.folder?.visibleFor ?? []),
+          uids: Set.from(widget.folder.visibleFor ?? []),
           onSelected: (users) {
             FirebaseFirestore.instance
                 .collection("folders")
-                .doc(widget.folder!.id)
+                .doc(widget.folder.id)
                 .update({"can-view": users.map((user) => user.uid).toList()});
-            widget.folder?.visibleFor = users.map((u) => u.uid).toList();
+            widget.folder.visibleFor = users.map((u) => u.uid).toList();
           },
         ),
       ),

@@ -25,12 +25,15 @@ class CollectionsPage extends StatelessWidget {
               child: CircularProgressIndicator.adaptive(),
             );
           } else {
-            return ListView.builder(
-              itemCount: snapshot.data!.docs.length,
-              itemBuilder: (context, index) {
-                final folder = Folder.fromSnapshot(snapshot.data!.docs[index]);
-                return CollectionTile(folder: folder);
-              },
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+              child: ListView.builder(
+                itemCount: snapshot.data!.docs.length,
+                itemBuilder: (context, index) {
+                  final folder = Folder.fromSnapshot(snapshot.data!.docs[index]);
+                  return CollectionTile(folder: folder);
+                },
+              ),
             );
           }
         },
