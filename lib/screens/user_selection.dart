@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:word_learn/model/friend_model.dart';
 
@@ -23,18 +24,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
 
   List<UserInfoModel> users = [];
   List<UserInfoModel> matches = [];
-  List<UserInfoModel> selected = [];
-
-  @override
-  initState() {
-    super.initState();
-    FirebaseFirestore.instance.collection('users').get().then((snapshot) {
-      users = snapshot.docs.map(UserInfoModel.fromSnapshot).toList();
-      selected = users
-          .where((user) => widget.uids?.contains(user.uid) ?? false)
-          .toList();
-    });
-  }
+  List<UserInfoModel>? selected;
 
   @override
   dispose() {
@@ -49,7 +39,7 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
         title: TextField(
           controller: textEditingController,
           decoration: const InputDecoration(
-            hintText: 'Search',
+            hintText: 'Search for people',
             border: InputBorder.none,
           ),
           onChanged: _onFilterTextChanged,
@@ -58,30 +48,35 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('users').snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting ||
-              !snapshot.hasData) {
+          if (snapshot.hasData) {
+            users =
+                snapshot.data!.docs.map(UserInfoModel.fromSnapshot).toList();
+            selected ??= users
+                .where((user) => widget.uids?.contains(user.uid) ?? false)
+                .toList();
+          } else {
+            //TODO: be more specific about what is happening to the user
             return const Center(
               child: CircularProgressIndicator.adaptive(),
             );
-          } else {
-            users =
-                snapshot.data!.docs.map(UserInfoModel.fromSnapshot).toList();
           }
           return _buildBackground();
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.pop(context);
-          widget.onSelected.call(selected);
+          widget.onSelected.call(selected ?? []);
         },
-        child: const Text('Done'),
+        icon: const Icon(Icons.done),
+        label: const Text('Done'),
       ),
     );
   }
 
   bool isSelected(index) =>
-      selected.map((e) => e.uid).contains(matches[index].uid);
+      selected?.map((e) => e.uid).contains(matches[index].uid) ?? false;
 
   void _onFilterTextChanged(String text) {
     setState(() {
@@ -97,75 +92,90 @@ class _UserSelectionScreenState extends State<UserSelectionScreen> {
 
   Widget _buildBackground() {
     if (textEditingController.text.isEmpty) {
-      if (selected.isEmpty) {
-        return const Center(
-          child: const Text('Search for a user.'),
-        );
-      } else {
-        return ListView.builder(
-          itemCount: selected.length,
-          itemBuilder: (context, index) {
-            return ListTile(
-              onTap: () {
-                setState(() {
-                  selected
-                      .removeWhere((user) => user.uid == selected[index].uid);
-                });
-              },
-              leading: Text(selected[index].displayName!),
-              trailing: Checkbox(
-                value: true,
-                onChanged: (value) {
-                  setState(() {
-                    if (value!) {
-                      selected.add(selected[index]);
-                    } else {
-                      selected.removeWhere(
-                          (user) => user.uid == selected[index].uid);
-                    }
-                  });
-                },
-              ),
-            );
-          },
-        );
+      if (selected != null && selected!.length > 1) {
+        return _buildSharedWithList();
       }
-    } else if (matches.isEmpty) {
       return const Center(
-        child: Text('No user found.'),
+        child: Text('Search for a user.'),
       );
     } else {
-      return ListView.builder(
-        itemCount: matches.length,
-        itemBuilder: (context, index) {
-          return ListTile(
-            onTap: () {
-              setState(() {
-                if (!isSelected(index)) {
-                  selected.add(matches[index]);
-                } else {
-                  selected
-                      .removeWhere((user) => user.uid == matches[index].uid);
-                }
-              });
-            },
-            leading: Text(matches[index].displayName!),
-            trailing: Checkbox(
-              value: isSelected(index),
-              onChanged: (value) {
-                setState(() {
-                  if (value!) {
-                    selected.add(matches[index]);
-                  } else {
-                    selected
-                        .removeWhere((user) => user.uid == matches[index].uid);
-                  }
-                });
+      if (matches.isEmpty) {
+        return _buildNoResultMessage();
+      }
+      return _buildMatchesList();
+    }
+  }
+
+  Widget _buildNoResultMessage() => Center(
+        child: Text(
+          'No user found',
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
+      );
+
+  Widget _buildSharedWithList() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Text(
+              "Can collaborate:",
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: selected?.length,
+              itemBuilder: (context, index) {
+                return _buildUserListTile(selected![index]);
               },
             ),
-          );
+          ),
+        ],
+      );
+
+  Widget _buildMatchesList() => ListView.builder(
+        itemCount: matches.length,
+        itemBuilder: (context, index) {
+          if (matches[index].uid == FirebaseAuth.instance.currentUser?.uid) {
+            return Container(); // Do not show current user among results
+          }
+          return _buildUserListTile(matches[index]);
         },
       );
+
+  Widget _buildUserListTile(UserInfoModel usr) {
+    if (usr.uid == FirebaseAuth.instance.currentUser?.uid) {
+      return Container(); // Do not show current user among results
     }
+    bool isSelected = selected?.any((u) => u.uid == usr.uid) ?? false;
+    return ListTile(
+      onTap: () {
+        setState(() {
+          if (isSelected) {
+            selected?.removeWhere((u) => u.uid == usr.uid);
+          } else {
+            selected?.add(usr);
+          }
+        });
+      },
+      leading: CircleAvatar(
+        backgroundColor: Colors.grey[300],
+        child: Text(usr.displayName?.substring(0, 1).toUpperCase() ?? ""),
+      ),
+      title: Text(usr.displayName!),
+      trailing: Checkbox(
+        value: isSelected,
+        onChanged: (value) {
+          setState(() {
+            if (value!) {
+              selected?.add(usr);
+            } else {
+              selected?.removeWhere((user) => user.uid == usr.uid);
+            }
+          });
+        },
+      ),
+    );
   }
 }

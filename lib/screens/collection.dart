@@ -236,6 +236,7 @@ class _CollectionPageState extends State<CollectionPage> {
                 .collection("folders")
                 .doc(widget.folder!.id)
                 .update({"can-view": users.map((user) => user.uid).toList()});
+            widget.folder?.visibleFor = users.map((u) => u.uid).toList();
           },
         ),
       ),
