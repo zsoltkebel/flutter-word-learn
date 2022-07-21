@@ -2,19 +2,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:word_learn/model/trans_collection.dart';
 
+typedef SharingChangeCallback = void Function(bool shared);
+
 /// Action button located at the trailing of a user list tile.
 /// Can be toggled to add/remove user to/from the list of collaborators
 /// of a collection.
 class ShareToggleButton extends StatefulWidget {
   final String uid;
   final TransCollection collection;
-  final bool isCollaborator;  // for initial value
+  final bool isCollaborator; // for initial value
+  final SharingChangeCallback? onSharingChanged;
 
   const ShareToggleButton({
     Key? key,
     required this.uid,
     required this.isCollaborator,
     required this.collection,
+    this.onSharingChanged,
   }) : super(key: key);
 
   @override
@@ -50,6 +54,7 @@ class _ShareToggleButtonState extends State<ShareToggleButton> {
         setState(() {
           isCollaborator = !isCollaborator;
         });
+        widget.onSharingChanged?.call(isCollaborator);
       },
       style: isCollaborator
           ? ButtonStyle(

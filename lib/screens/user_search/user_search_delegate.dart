@@ -24,6 +24,9 @@ class UserSearchDelegate extends SearchDelegate {
   });
 
   @override
+  String get searchFieldLabel => 'Search for people';
+
+  @override
   List<Widget>? buildActions(BuildContext context) {
     return [
       Offstage(

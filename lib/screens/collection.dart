@@ -68,26 +68,43 @@ class _CollectionPageState extends State<CollectionPage> {
                           users: users,
                           selectedUids: widget.folder.visibleFor,
                           suggestionBuilder: () {
-                            return ListView.builder(
-                              itemCount: widget.folder.visibleFor.length,
-                              itemBuilder: (context, index) {
-                                final usr =
-                                    users[widget.folder.visibleFor[index]];
-                                if (usr == null ||
-                                    usr.uid ==
-                                        FirebaseAuth
-                                            .instance.currentUser?.uid) {
-                                  return Container(); // Do not show current user among results
-                                }
-                                return UserTile(
-                                  usr: usr,
-                                  trailing: ShareToggleButton(
-                                      uid: usr.uid,
-                                      isCollaborator: widget.folder.visibleFor
-                                          .contains(usr.uid),
-                                      collection: widget.folder),
-                                );
-                              },
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Padding(
+                                  padding: EdgeInsets.all(20.0),
+                                  child: Text('Sharing'),
+                                ),
+                                Expanded(
+                                  child: ListView.builder(
+                                    itemCount: widget.folder.visibleFor.length,
+                                    itemBuilder: (context, index) {
+                                      final usr = users[
+                                          widget.folder.visibleFor[index]];
+                                      if (usr == null ||
+                                          usr.uid ==
+                                              FirebaseAuth
+                                                  .instance.currentUser?.uid) {
+                                        return Container(); // Do not show current user among results
+                                      }
+                                      return UserTile(
+                                        usr: usr,
+                                        trailing: ShareToggleButton(
+                                            uid: usr.uid,
+                                            isCollaborator: widget
+                                                .folder.visibleFor
+                                                .contains(usr.uid),
+                                            collection: widget.folder,
+                                            onSharingChanged: (shared) =>
+                                                _displayAddOrRemoveSnack(
+                                                    context,
+                                                    shared,
+                                                    usr.displayName!)),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
                             );
                           },
                           actionBuilder: (usr) {
@@ -96,7 +113,10 @@ class _CollectionPageState extends State<CollectionPage> {
                             return ShareToggleButton(
                                 uid: usr.uid,
                                 isCollaborator: isCollaborator,
-                                collection: widget.folder);
+                                collection: widget.folder,
+                                onSharingChanged: (shared) =>
+                                    _displayAddOrRemoveSnack(
+                                        context, shared, usr.displayName!));
                           },
                         ),
                       );
@@ -293,5 +313,17 @@ class _CollectionPageState extends State<CollectionPage> {
         builder: (context) => CollectionDetailsInputPage(
               collection: widget.folder,
             )));
+  }
+
+  void _displayAddOrRemoveSnack(BuildContext context, bool added, String name) {
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(added
+              ? 'Shared with $name'
+              : 'Removed $name from this collection'),
+        ),
+      );
   }
 }
