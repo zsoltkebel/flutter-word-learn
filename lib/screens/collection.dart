@@ -1,10 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:word_learn/model/custom_user_info.dart';
 import 'package:word_learn/model/firestore_manager.dart';
 import 'package:word_learn/model/trans_collection.dart';
 import 'package:word_learn/model/trans_entry.dart';
 import 'package:word_learn/screens/collection_details_input.dart';
+import 'package:word_learn/screens/user_search/user_search_delegate.dart';
+import 'package:word_learn/screens/user_search/share_toggle_button.dart';
+import 'package:word_learn/screens/user_search/user_list_tile.dart';
 import 'package:word_learn/screens/user_selection.dart';
 import 'package:word_learn/view/add_page.dart';
 import 'package:word_learn/view/components/info_icons.dart';
@@ -50,7 +54,53 @@ class _CollectionPageState extends State<CollectionPage> {
               ),
               actions: [
                 IconButton(
-                    onPressed: _onSharePressed,
+                    onPressed: () async {
+                      final snapshot = await FirebaseFirestore.instance
+                          .collection('users')
+                          .get();
+                      final users = {
+                        for (var doc in snapshot.docs)
+                          doc.id: CustomUserInfo.fromSnapshot(doc)
+                      };
+                      showSearch(
+                        context: context,
+                        delegate: UserSearchDelegate(
+                          users: users,
+                          selectedUids: widget.folder.visibleFor,
+                          suggestionBuilder: () {
+                            return ListView.builder(
+                              itemCount: widget.folder.visibleFor.length,
+                              itemBuilder: (context, index) {
+                                final usr =
+                                    users[widget.folder.visibleFor[index]];
+                                if (usr == null ||
+                                    usr.uid ==
+                                        FirebaseAuth
+                                            .instance.currentUser?.uid) {
+                                  return Container(); // Do not show current user among results
+                                }
+                                return UserListTile(
+                                  usr: usr,
+                                  trailing: ShareToggleButton(
+                                      uid: usr.uid,
+                                      isCollaborator: widget.folder.visibleFor
+                                          .contains(usr.uid),
+                                      collection: widget.folder),
+                                );
+                              },
+                            );
+                          },
+                          actionBuilder: (usr) {
+                            final isCollaborator =
+                                widget.folder.visibleFor.contains(usr.uid);
+                            return ShareToggleButton(
+                                uid: usr.uid,
+                                isCollaborator: isCollaborator,
+                                collection: widget.folder);
+                          },
+                        ),
+                      );
+                    },
                     icon: const Icon(Icons.person_add_alt)),
                 IconButton(
                     onPressed: _onReversePressed,
@@ -87,8 +137,7 @@ class _CollectionPageState extends State<CollectionPage> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final doc = snapshot.data!.docs[index];
-                        TransEntry word =
-                            TransEntry.fromSnapshot(doc);
+                        TransEntry word = TransEntry.fromSnapshot(doc);
                         return Dismissible(
                           direction: DismissDirection.endToStart,
                           key: UniqueKey(),
@@ -222,7 +271,7 @@ class _CollectionPageState extends State<CollectionPage> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => UserSelectionScreen(
-          uids: Set.from(widget.folder.visibleFor ?? []),
+          uids: Set.from(widget.folder.visibleFor),
           onSelected: (users) {
             FirebaseFirestore.instance
                 .collection("folders")
