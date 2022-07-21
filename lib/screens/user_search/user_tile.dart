@@ -4,44 +4,32 @@ import 'package:word_learn/model/custom_user_info.dart';
 
 /// A simple list tile that display user name and icon in future.
 /// Usually used in listviews.
-class UserTile extends StatefulWidget {
+class UserTile extends StatelessWidget {
   final CustomUserInfo usr;
   final Widget? trailing;
+  final ValueSetter<CustomUserInfo>? onTap;
 
   const UserTile({
     Key? key,
     required this.usr,
     this.trailing,
+    this.onTap,
   }) : super(key: key);
 
   @override
-  State<UserTile> createState() => _UserTileState();
-}
-
-class _UserTileState extends State<UserTile> {
-
-  @override
   Widget build(BuildContext context) {
-    if (widget.usr.uid == FirebaseAuth.instance.currentUser?.uid) {
+    if (usr.uid == FirebaseAuth.instance.currentUser?.uid) {
       return Container(); // Do not show current user among results
     }
     return ListTile(
-      onTap: () {
-        // setState(() {
-        //   if (isSelected) {
-        //     selected?.removeWhere((u) => u.uid == usr.uid);
-        //   } else {
-        //     selected?.add(usr);
-        //   }
-        // });
-      },
+      onTap: () => onTap?.call(usr),
       leading: CircleAvatar(
         backgroundColor: Colors.grey[300],
         child:
-        Text(widget.usr.displayName?.substring(0, 1).toUpperCase() ?? ""),
+        Text(usr.displayName?.substring(0, 1).toUpperCase() ?? ""),
       ),
-      title: Text(widget.usr.displayName!),
-      trailing: widget.trailing,
+      title: Text(usr.displayName!),
+      trailing: trailing,
     );
   }
 }
