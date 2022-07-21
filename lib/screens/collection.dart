@@ -8,7 +8,7 @@ import 'package:word_learn/model/trans_entry.dart';
 import 'package:word_learn/screens/collection_details_input.dart';
 import 'package:word_learn/screens/user_search/user_search_delegate.dart';
 import 'package:word_learn/screens/user_search/share_toggle_button.dart';
-import 'package:word_learn/screens/user_search/user_list_tile.dart';
+import 'package:word_learn/screens/user_search/user_tile.dart';
 import 'package:word_learn/screens/user_selection.dart';
 import 'package:word_learn/view/add_page.dart';
 import 'package:word_learn/view/components/info_icons.dart';
@@ -79,7 +79,7 @@ class _CollectionPageState extends State<CollectionPage> {
                                             .instance.currentUser?.uid) {
                                   return Container(); // Do not show current user among results
                                 }
-                                return UserListTile(
+                                return UserTile(
                                   usr: usr,
                                   trailing: ShareToggleButton(
                                       uid: usr.uid,

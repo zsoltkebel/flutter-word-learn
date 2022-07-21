@@ -4,21 +4,21 @@ import 'package:word_learn/model/custom_user_info.dart';
 
 /// A simple list tile that display user name and icon in future.
 /// Usually used in listviews.
-class UserListTile extends StatefulWidget {
+class UserTile extends StatefulWidget {
   final CustomUserInfo usr;
   final Widget? trailing;
 
-  const UserListTile({
+  const UserTile({
     Key? key,
     required this.usr,
     this.trailing,
   }) : super(key: key);
 
   @override
-  State<UserListTile> createState() => _UserListTileState();
+  State<UserTile> createState() => _UserTileState();
 }
 
-class _UserListTileState extends State<UserListTile> {
+class _UserTileState extends State<UserTile> {
 
   @override
   Widget build(BuildContext context) {

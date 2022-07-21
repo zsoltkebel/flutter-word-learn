@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:word_learn/model/custom_user_info.dart';
 import 'dart:developer';
 
-import 'package:word_learn/screens/user_search/user_list_tile.dart';
+import 'package:word_learn/screens/user_search/user_tile.dart';
 
 typedef ActionBuilder = Widget Function(CustomUserInfo usr);
 typedef SuggestionBuilder = Widget Function();
@@ -52,7 +52,7 @@ class UserSearchDelegate extends SearchDelegate {
           if (usr.uid == FirebaseAuth.instance.currentUser?.uid) {
             return Container(); // Do not show current user among results
           }
-          return UserListTile(
+          return UserTile(
             usr: usr,
             trailing: actionBuilder?.call(usr),
           );
