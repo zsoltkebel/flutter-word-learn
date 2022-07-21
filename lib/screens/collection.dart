@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:word_learn/model/custom_user_info.dart';
@@ -29,16 +30,21 @@ class CollectionPage extends StatefulWidget {
 }
 
 class _CollectionPageState extends State<CollectionPage> {
-  late bool reverse =
-      widget.folder.reverseFor.contains(FirebaseAuth.instance.currentUser!.uid);
+  TransCollection? collection;
+
+  @override
+  initState() {
+    super.initState();
+    collection ??= widget.folder;
+  }
 
   @override
   Widget build(BuildContext context) {
     developer.log('Trying to load collection with id: ${widget.folder.id}');
-
-    final stream = widget.folder.entries
-        ?.orderBy(reverse ? 'text-2' : 'text-1')
-        .snapshots();
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final reverse = collection?.reverseFor.contains(uid) ?? false;
+    final stream =
+        collection?.entries?.orderBy(reverse ? 'text-2' : 'text-1').snapshots();
     return WillPopScope(
       onWillPop: () {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -49,86 +55,23 @@ class _CollectionPageState extends State<CollectionPage> {
           slivers: [
             SliverAppBar(
               title: GestureDetector(
-                onTap: _onChangeDetailsPressed,
-                child: Text(widget.folder.name),
+                onTap: _navigateToDetailsChange,
+                child: Text(collection?.name ?? r'¯\_(ツ)_/¯'),
               ),
               actions: [
+                // IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
                 IconButton(
-                    onPressed: () async {
-                      final snapshot = await FirebaseFirestore.instance
-                          .collection('users')
-                          .get();
-                      final users = {
-                        for (var doc in snapshot.docs)
-                          doc.id: CustomUserInfo.fromSnapshot(doc)
-                      };
-                      showSearch(
-                        context: context,
-                        delegate: UserSearchDelegate(
-                          users: users,
-                          selectedUids: widget.folder.visibleFor,
-                          suggestionBuilder: () {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Padding(
-                                  padding: EdgeInsets.all(20.0),
-                                  child: Text('Sharing'),
-                                ),
-                                Expanded(
-                                  child: ListView.builder(
-                                    itemCount: widget.folder.visibleFor.length,
-                                    itemBuilder: (context, index) {
-                                      final usr = users[
-                                          widget.folder.visibleFor[index]];
-                                      if (usr == null ||
-                                          usr.uid ==
-                                              FirebaseAuth
-                                                  .instance.currentUser?.uid) {
-                                        return Container(); // Do not show current user among results
-                                      }
-                                      return UserTile(
-                                        usr: usr,
-                                        trailing: ShareToggleButton(
-                                            uid: usr.uid,
-                                            isCollaborator: widget
-                                                .folder.visibleFor
-                                                .contains(usr.uid),
-                                            collection: widget.folder,
-                                            onSharingChanged: (shared) =>
-                                                _displayAddOrRemoveSnack(
-                                                    context,
-                                                    shared,
-                                                    usr.displayName!)),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                          actionBuilder: (usr) {
-                            final isCollaborator =
-                                widget.folder.visibleFor.contains(usr.uid);
-                            return ShareToggleButton(
-                                uid: usr.uid,
-                                isCollaborator: isCollaborator,
-                                collection: widget.folder,
-                                onSharingChanged: (shared) =>
-                                    _displayAddOrRemoveSnack(
-                                        context, shared, usr.displayName!));
-                          },
-                        ),
-                      );
-                    },
+                    onPressed: _searchUser,
                     icon: const Icon(Icons.person_add_alt)),
-                IconButton(
-                    onPressed: _onReversePressed,
-                    icon: const Icon(Icons.swap_vert)),
                 IconButton(
                     onPressed: _onCreatePressed, icon: const Icon(Icons.add))
               ],
               floating: true,
+            ),
+            CupertinoSliverRefreshControl(
+              onRefresh: () async {
+                await _reloadCollection();
+              },
             ),
             StreamBuilder<QuerySnapshot>(
                 stream: stream,
@@ -262,57 +205,18 @@ class _CollectionPageState extends State<CollectionPage> {
     );
   }
 
-  void _onReversePressed() {
-    setState(() {
-      reverse = !reverse;
-    });
-    reverse
-        ? FirebaseFirestore.instance
-            .collection("folders")
-            .doc(widget.folder.id)
-            .update({
-            "reverse-for":
-                FieldValue.arrayUnion([FirebaseAuth.instance.currentUser!.uid])
-          })
-        : FirebaseFirestore.instance
-            .collection("folders")
-            .doc(widget.folder.id)
-            .update({
-            "reverse-for":
-                FieldValue.arrayRemove([FirebaseAuth.instance.currentUser!.uid])
-          });
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-            'Primary language: ${reverse ? widget.folder.language2 : widget.folder.language1}')));
-  }
-
-  void _onSharePressed() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => UserSelectionScreen(
-          uids: Set.from(widget.folder.visibleFor),
-          onSelected: (users) {
-            FirebaseFirestore.instance
-                .collection("folders")
-                .doc(widget.folder.id)
-                .update({"can-view": users.map((user) => user.uid).toList()});
-            widget.folder.visibleFor = users.map((u) => u.uid).toList();
-          },
-        ),
-      ),
-    );
-  }
-
   void _onCreatePressed() {
     Navigator.of(context).push(_createRoute());
   }
 
-  void _onChangeDetailsPressed() {
-    Navigator.of(context).push(MaterialPageRoute(
+  void _navigateToDetailsChange() async {
+    final needsRefresh = await Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => CollectionDetailsInputPage(
-              collection: widget.folder,
+              collection: collection,
             )));
+    if (needsRefresh) {
+      _reloadCollection();
+    }
   }
 
   void _displayAddOrRemoveSnack(BuildContext context, bool added, String name) {
@@ -325,5 +229,85 @@ class _CollectionPageState extends State<CollectionPage> {
               : 'Removed $name from this collection'),
         ),
       );
+  }
+
+  Future _reloadCollection() async {
+    final doc = await FirebaseFirestore.instance
+        .collection('folders')
+        .doc(collection!.id)
+        .get();
+    setState(() {
+      collection = TransCollection.fromSnapshot(doc);
+      print('updated');
+      print(collection);
+    });
+  }
+
+  void _searchUser() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .get();
+    final users = {
+      for (var doc in snapshot.docs)
+        doc.id: CustomUserInfo.fromSnapshot(doc)
+    };
+    showSearch(
+      context: context,
+      delegate: UserSearchDelegate(
+        users: users,
+        selectedUids: widget.folder.visibleFor,
+        suggestionBuilder: () {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(20.0),
+                child: Text('Sharing'),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: widget.folder.visibleFor.length,
+                  itemBuilder: (context, index) {
+                    final usr = users[
+                    widget.folder.visibleFor[index]];
+                    if (usr == null ||
+                        usr.uid ==
+                            FirebaseAuth
+                                .instance.currentUser?.uid) {
+                      return Container(); // Do not show current user among results
+                    }
+                    return UserTile(
+                      usr: usr,
+                      trailing: ShareToggleButton(
+                          uid: usr.uid,
+                          isCollaborator: widget
+                              .folder.visibleFor
+                              .contains(usr.uid),
+                          collection: widget.folder,
+                          onSharingChanged: (shared) =>
+                              _displayAddOrRemoveSnack(
+                                  context,
+                                  shared,
+                                  usr.displayName!)),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+        actionBuilder: (usr) {
+          final isCollaborator =
+          widget.folder.visibleFor.contains(usr.uid);
+          return ShareToggleButton(
+              uid: usr.uid,
+              isCollaborator: isCollaborator,
+              collection: widget.folder,
+              onSharingChanged: (shared) =>
+                  _displayAddOrRemoveSnack(
+                      context, shared, usr.displayName!));
+        },
+      ),
+    );
   }
 }

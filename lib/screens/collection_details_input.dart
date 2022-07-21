@@ -7,18 +7,22 @@ import 'package:word_learn/model/trans_collection.dart';
 class CollectionDetailsInputPage extends StatefulWidget {
   final TransCollection? collection;
 
-  const CollectionDetailsInputPage({Key? key, this.collection}) : super(key: key);
+  const CollectionDetailsInputPage({Key? key, this.collection})
+      : super(key: key);
 
   @override
-  State<CollectionDetailsInputPage> createState() => _CollectionDetailsInputPageState();
+  State<CollectionDetailsInputPage> createState() =>
+      _CollectionDetailsInputPageState();
 }
 
-class _CollectionDetailsInputPageState extends State<CollectionDetailsInputPage> {
+class _CollectionDetailsInputPageState
+    extends State<CollectionDetailsInputPage> {
   bool missingDetails = true;
 
   final nameController = TextEditingController();
   final lang1Controller = TextEditingController();
   final lang2Controller = TextEditingController();
+  bool isSwapped = false;
 
   @override
   void initState() {
@@ -27,6 +31,8 @@ class _CollectionDetailsInputPageState extends State<CollectionDetailsInputPage>
       nameController.text = widget.collection!.name;
       lang1Controller.text = widget.collection!.language1;
       lang2Controller.text = widget.collection!.language2;
+      isSwapped = widget.collection!.reverseFor
+          .contains(FirebaseAuth.instance.currentUser!.uid);
       _checkMissingDetail();
     }
   }
@@ -92,7 +98,14 @@ class _CollectionDetailsInputPageState extends State<CollectionDetailsInputPage>
             controller: nameController,
             onChanged: (text) => _checkMissingDetail(),
             autofocus: true,
-            decoration: const InputDecoration(hintText: 'Name'),
+            decoration: const InputDecoration(
+              hintText: 'Name',
+              filled: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(20.0)),
+                borderSide: BorderSide.none,
+              ),
+            ),
           ),
           const SizedBox(
             height: 10.0,
@@ -100,25 +113,47 @@ class _CollectionDetailsInputPageState extends State<CollectionDetailsInputPage>
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: lang1Controller,
-                  onChanged: (text) => _checkMissingDetail(),
-                  decoration: const InputDecoration(hintText: 'Lang 1'),
+                child: _buildLanguageTextField(
+                  controller: isSwapped ? lang2Controller : lang1Controller,
+                  hintText: isSwapped ? 'Lang 2' : 'Lang 1',
                 ),
               ),
               const SizedBox(
                 width: 10.0,
               ),
+              IconButton(
+                  onPressed: _onReversePressed,
+                  icon: const Icon(Icons.swap_horiz)),
+              const SizedBox(
+                width: 10.0,
+              ),
               Expanded(
-                child: TextField(
-                  controller: lang2Controller,
-                  onChanged: (text) => _checkMissingDetail(),
-                  decoration: const InputDecoration(hintText: 'Lang 2'),
+                child: _buildLanguageTextField(
+                  controller: isSwapped ? lang1Controller : lang2Controller,
+                  hintText: isSwapped ? 'Lang 1' : 'Lang 2',
                 ),
               ),
             ],
           ),
         ],
+      );
+
+  Widget _buildLanguageTextField({
+    required TextEditingController controller,
+    required String hintText,
+  }) =>
+      TextField(
+        controller: controller,
+        onChanged: (text) => _checkMissingDetail(),
+        textAlign: TextAlign.center,
+        decoration: InputDecoration(
+          hintText: hintText,
+          filled: true,
+          border: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20.0)),
+            borderSide: BorderSide.none,
+          ),
+        ),
       );
 
   void _checkMissingDetail() {
@@ -157,7 +192,46 @@ class _CollectionDetailsInputPageState extends State<CollectionDetailsInputPage>
           'reverse-for': widget.collection?.reverseFor ?? [],
           'members': {},
         })
-        .then((value) => Navigator.pop(context))
+        .then((value) => Navigator.pop(context, true))
         .onError((error, stackTrace) => print(error));
+  }
+
+  void _onReversePressed() {
+    //TODO: fix collection check before reversing
+    if (widget.collection == null) return;
+
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    isSwapped = widget.collection!.reverseFor.contains(uid);
+
+    if (isSwapped) {
+      // switch back to original
+      FirebaseFirestore.instance
+          .collection("folders")
+          .doc(widget.collection!.id)
+          .update({
+        "reverse-for": FieldValue.arrayRemove([uid])
+      });
+      setState(() {
+        widget.collection!.reverseFor.remove(uid);
+      });
+    } else {
+      // swap lang-1 and lang-2
+      FirebaseFirestore.instance
+          .collection("folders")
+          .doc(widget.collection!.id)
+          .update({
+        "reverse-for": FieldValue.arrayUnion([uid])
+      });
+      setState(() {
+        widget.collection!.reverseFor.add(uid);
+      });
+    }
+    setState(() {
+      isSwapped = !isSwapped;
+    });
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+            'Primary language: ${isSwapped ? widget.collection!.language2 : widget.collection!.language1}')));
   }
 }
