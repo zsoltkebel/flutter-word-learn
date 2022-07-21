@@ -7,13 +7,11 @@ import 'package:word_learn/model/firestore_manager.dart';
 import 'package:word_learn/model/trans_collection.dart';
 import 'package:word_learn/model/trans_entry.dart';
 import 'package:word_learn/screens/collection_details_input.dart';
+import 'package:word_learn/screens/entry_search/entry_tile.dart';
 import 'package:word_learn/screens/user_search/user_search_delegate.dart';
 import 'package:word_learn/screens/user_search/share_toggle_button.dart';
 import 'package:word_learn/screens/user_search/user_tile.dart';
-import 'package:word_learn/screens/user_selection.dart';
 import 'package:word_learn/view/add_page.dart';
-import 'package:word_learn/view/components/info_icons.dart';
-import 'package:word_learn/view/details_page.dart';
 import 'package:word_learn/extension/extensions.dart';
 import 'dart:developer' as developer;
 
@@ -100,7 +98,7 @@ class _CollectionPageState extends State<CollectionPage> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final doc = snapshot.data!.docs[index];
-                        TransEntry word = TransEntry.fromSnapshot(doc);
+                        TransEntry entry = TransEntry.fromSnapshot(doc);
                         return Dismissible(
                           direction: DismissDirection.endToStart,
                           key: UniqueKey(),
@@ -111,12 +109,12 @@ class _CollectionPageState extends State<CollectionPage> {
                               snapshot.data!.docs.removeAt(index);
 
                               FirestoreManager.deleteEntryAndFiles(
-                                  widget.folder, word);
+                                  widget.folder, entry);
                             });
 
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                 content: Text(
-                                    'Deleted "${word.text1.truncateWithEllipsis(8)}"')));
+                                    'Deleted "${entry.text1.truncateWithEllipsis(8)}"')));
                           },
                           background: Container(
                             color: Colors.red,
@@ -131,35 +129,9 @@ class _CollectionPageState extends State<CollectionPage> {
                               ),
                             ),
                           ),
-                          child: ListTile(
-                            title: Text(reverse ? word.text2 : word.text1),
-                            subtitle: Text(reverse ? word.text1 : word.text2),
-                            trailing: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                InfoIcons(
-                                  hasText: word.text1.isNotEmpty,
-                                  hasRecording: word.storageRef1 != null,
-                                ),
-                                const SizedBox(
-                                  height: 4.0,
-                                ),
-                                InfoIcons(
-                                  hasText: word.text2.isNotEmpty,
-                                  hasRecording: word.storageRef2 != null,
-                                ),
-                              ],
-                            ),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => DetailsPage(
-                                          word,
-                                          folder: widget.folder,
-                                        )),
-                              );
-                            },
+                          child: EntryTile(
+                            entry: entry,
+                            collection: collection!,
                           ),
                         );
                       },
@@ -210,13 +182,11 @@ class _CollectionPageState extends State<CollectionPage> {
   }
 
   void _navigateToDetailsChange() async {
-    final needsRefresh = await Navigator.of(context).push(MaterialPageRoute(
+    await Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => CollectionDetailsInputPage(
               collection: collection,
             )));
-    if (needsRefresh) {
-      _reloadCollection();
-    }
+    _reloadCollection();
   }
 
   void _displayAddOrRemoveSnack(BuildContext context, bool added, String name) {
@@ -244,12 +214,9 @@ class _CollectionPageState extends State<CollectionPage> {
   }
 
   void _searchUser() async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .get();
+    final snapshot = await FirebaseFirestore.instance.collection('users').get();
     final users = {
-      for (var doc in snapshot.docs)
-        doc.id: CustomUserInfo.fromSnapshot(doc)
+      for (var doc in snapshot.docs) doc.id: CustomUserInfo.fromSnapshot(doc)
     };
     showSearch(
       context: context,
@@ -268,27 +235,21 @@ class _CollectionPageState extends State<CollectionPage> {
                 child: ListView.builder(
                   itemCount: widget.folder.visibleFor.length,
                   itemBuilder: (context, index) {
-                    final usr = users[
-                    widget.folder.visibleFor[index]];
+                    final usr = users[widget.folder.visibleFor[index]];
                     if (usr == null ||
-                        usr.uid ==
-                            FirebaseAuth
-                                .instance.currentUser?.uid) {
+                        usr.uid == FirebaseAuth.instance.currentUser?.uid) {
                       return Container(); // Do not show current user among results
                     }
                     return UserTile(
                       usr: usr,
                       trailing: ShareToggleButton(
                           uid: usr.uid,
-                          isCollaborator: widget
-                              .folder.visibleFor
-                              .contains(usr.uid),
+                          isCollaborator:
+                              widget.folder.visibleFor.contains(usr.uid),
                           collection: widget.folder,
                           onSharingChanged: (shared) =>
                               _displayAddOrRemoveSnack(
-                                  context,
-                                  shared,
-                                  usr.displayName!)),
+                                  context, shared, usr.displayName!)),
                     );
                   },
                 ),
@@ -297,15 +258,13 @@ class _CollectionPageState extends State<CollectionPage> {
           );
         },
         actionBuilder: (usr) {
-          final isCollaborator =
-          widget.folder.visibleFor.contains(usr.uid);
+          final isCollaborator = widget.folder.visibleFor.contains(usr.uid);
           return ShareToggleButton(
               uid: usr.uid,
               isCollaborator: isCollaborator,
               collection: widget.folder,
               onSharingChanged: (shared) =>
-                  _displayAddOrRemoveSnack(
-                      context, shared, usr.displayName!));
+                  _displayAddOrRemoveSnack(context, shared, usr.displayName!));
         },
       ),
     );

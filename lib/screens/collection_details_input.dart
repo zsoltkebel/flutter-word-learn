@@ -232,9 +232,10 @@ class _CollectionDetailsInputPageState
     setState(() {
       isSwapped = !isSwapped;
     });
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-            'Primary language: ${isSwapped ? widget.collection!.language2 : widget.collection!.language1}')));
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+          content: Text(
+              'Primary language: ${isSwapped ? widget.collection!.language2 : widget.collection!.language1}')));
   }
 }
