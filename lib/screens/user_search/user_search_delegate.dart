@@ -26,10 +26,13 @@ class UserSearchDelegate extends SearchDelegate {
   @override
   List<Widget>? buildActions(BuildContext context) {
     return [
-      IconButton(
-        icon: const Icon(Icons.clear),
-        onPressed: () => query = '',
-      ),
+      Offstage(
+        offstage: query.isEmpty,
+        child: IconButton(
+          icon: const Icon(Icons.clear),
+          onPressed: () => query = '',
+        ),
+      )
     ];
   }
 
@@ -69,5 +72,3 @@ class UserSearchDelegate extends SearchDelegate {
     return suggestionBuilder?.call() ?? buildResults(context);
   }
 }
-
-
