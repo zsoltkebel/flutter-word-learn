@@ -7,6 +7,7 @@ import 'package:word_learn/model/firestore_manager.dart';
 import 'package:word_learn/model/trans_collection.dart';
 import 'package:word_learn/model/trans_entry.dart';
 import 'package:word_learn/screens/collection_details_input.dart';
+import 'package:word_learn/screens/entry_search/entry_search_delegate.dart';
 import 'package:word_learn/screens/entry_search/entry_tile.dart';
 import 'package:word_learn/screens/user_search/user_search_delegate.dart';
 import 'package:word_learn/screens/user_search/share_toggle_button.dart';
@@ -29,6 +30,7 @@ class CollectionPage extends StatefulWidget {
 
 class _CollectionPageState extends State<CollectionPage> {
   TransCollection? collection;
+  List<QueryDocumentSnapshot>? entryDocs;
 
   @override
   initState() {
@@ -57,7 +59,8 @@ class _CollectionPageState extends State<CollectionPage> {
                 child: Text(collection?.name ?? r'¯\_(ツ)_/¯'),
               ),
               actions: [
-                // IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
+                IconButton(
+                    onPressed: _searchEntry, icon: const Icon(Icons.search)),
                 IconButton(
                     onPressed: _searchUser,
                     icon: const Icon(Icons.person_add_alt)),
@@ -92,6 +95,7 @@ class _CollectionPageState extends State<CollectionPage> {
                           child: Text('Oops... Something went wrong :/')),
                     );
                   }
+                  entryDocs = snapshot.data!.docs;
                   developer
                       .log('Collection with id: ${widget.folder.id} is loaded');
                   return SliverList(
@@ -211,6 +215,14 @@ class _CollectionPageState extends State<CollectionPage> {
       print('updated');
       print(collection);
     });
+  }
+
+  void _searchEntry() {
+    showSearch(
+        context: context,
+        delegate: EntrySearchDelegate(
+            collection: collection!,
+            entries: entryDocs?.map(TransEntry.fromSnapshot).toList() ?? []));
   }
 
   void _searchUser() async {
