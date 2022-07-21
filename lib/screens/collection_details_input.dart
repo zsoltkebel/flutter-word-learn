@@ -180,7 +180,6 @@ class _CollectionDetailsInputPageState
     final lang2 = lang2Controller.text;
     final ownerID = FirebaseAuth.instance.currentUser!.uid;
     final ownerName = FirebaseAuth.instance.currentUser!.displayName;
-    final canView = [FirebaseAuth.instance.currentUser!.uid];
 
     FirebaseFirestore.instance
         .collection('folders')
@@ -191,7 +190,8 @@ class _CollectionDetailsInputPageState
           'lang-2': lang2,
           'owner-id': ownerID,
           'owner-name': ownerName,
-          'can-view': canView,
+          'can-view': widget.collection?.visibleFor ??
+              [FirebaseAuth.instance.currentUser!.uid],
           'reverse-for': widget.collection?.reverseFor ?? [],
           'members': {},
         })
