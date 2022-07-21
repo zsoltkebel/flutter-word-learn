@@ -98,6 +98,8 @@ class _CollectionDetailsInputPageState
             controller: nameController,
             onChanged: (text) => _checkMissingDetail(),
             autofocus: true,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge,
             decoration: const InputDecoration(
               hintText: 'Name',
               filled: true,
@@ -146,6 +148,7 @@ class _CollectionDetailsInputPageState
         controller: controller,
         onChanged: (text) => _checkMissingDetail(),
         textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.titleMedium,
         decoration: InputDecoration(
           hintText: hintText,
           filled: true,
