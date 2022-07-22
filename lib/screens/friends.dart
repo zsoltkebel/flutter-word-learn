@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'package:word_learn/model/custom_user_info.dart';
-import 'package:word_learn/widgets/friend_tile.dart';
-
 class FriendsPage extends StatelessWidget {
   const FriendsPage({Key? key}) : super(key: key);
 
@@ -33,10 +30,12 @@ class FriendsPage extends StatelessWidget {
                   ),
                   itemCount: snapshot.data!.docs.length,
                   itemBuilder: (BuildContext context, int index) {
-                    final friend =
-                    CustomUserInfo.fromSnapshot(snapshot.data!.docs[index]);
-
-                    return FriendTile(friend: friend);
+                    //TODO fix friend fetch
+                    // final friend =
+                    // UserModel.fromDocumentSnapshot(snapshot.data!.docs[index] as DocumentSnapshot);
+                    //
+                    // return FriendTile(friend: friend);
+                    return Container();
                   }),
             );
           }),

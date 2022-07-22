@@ -1,13 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:word_learn/model/custom_user_info.dart';
+import 'package:word_learn/model/user_model.dart';
 
 /// A simple list tile that display user name and icon in future.
 /// Usually used in listviews.
 class UserTile extends StatelessWidget {
-  final CustomUserInfo usr;
+  final UserModel usr;
   final Widget? trailing;
-  final ValueSetter<CustomUserInfo>? onTap;
+  final ValueSetter<UserModel>? onTap;
 
   const UserTile({
     Key? key,

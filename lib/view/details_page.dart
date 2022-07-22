@@ -12,7 +12,7 @@ import 'package:word_learn/view/components/recorder_ui.dart';
 
 class DetailsPage extends StatefulWidget {
   final TransCollection folder;
-  final TransEntry entry;
+  final TrEntry entry;
 
   const DetailsPage(this.entry, {Key? key, required this.folder})
       : super(key: key);

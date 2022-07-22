@@ -9,7 +9,7 @@ class FirestoreManager {
 
   /// Can be used to add and update entry
   static Future<void> setEntry(
-      {TransCollection? folder, TransEntry? entry}) async {
+      {TransCollection? folder, TrEntry? entry}) async {
     if (entry?.id == null) {
       entry =
           entry?.copyWith(id: (await folder?.entries?.add(entry.toJson()))!.id);
@@ -28,14 +28,14 @@ class FirestoreManager {
     return folder?.entries?.doc(entry?.id).set(entry?.toJson());
   }
 
-  static Future? deleteEntry(TransCollection folder, TransEntry word) {
+  static Future? deleteEntry(TransCollection folder, TrEntry word) {
     return folder.entries?.doc(word.id).delete().then((value) {
       print("Word Deleted");
     }).catchError((error) => print("Failed to delete user: $error"));
   }
 
   static Future deleteEntryAndFiles(
-      TransCollection folder, TransEntry entry) async {
+      TransCollection folder, TrEntry entry) async {
     print('deleting entry and recordings: ${entry.id}');
     if (entry.storageRef1 != null) {
       await FirebaseStorageHelper.deleteFile(path: entry.storageRef1!);

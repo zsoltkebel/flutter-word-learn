@@ -2,10 +2,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:word_learn/model/custom_user_info.dart';
 import 'package:word_learn/model/firestore_manager.dart';
 import 'package:word_learn/model/trans_collection.dart';
 import 'package:word_learn/model/trans_entry.dart';
+import 'package:word_learn/model/user_model.dart';
 import 'package:word_learn/screens/collection_details_input.dart';
 import 'package:word_learn/screens/entry_search/entry_search_delegate.dart';
 import 'package:word_learn/screens/entry_search/entry_tile.dart';
@@ -102,7 +102,7 @@ class _CollectionPageState extends State<CollectionPage> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final doc = snapshot.data!.docs[index];
-                        TransEntry entry = TransEntry.fromSnapshot(doc);
+                        TrEntry entry = TrEntry.fromDocumentSnapshot(doc);
                         return Dismissible(
                           direction: DismissDirection.endToStart,
                           key: UniqueKey(),
@@ -211,7 +211,7 @@ class _CollectionPageState extends State<CollectionPage> {
         .doc(collection!.id)
         .get();
     setState(() {
-      collection = TransCollection.fromSnapshot(doc);
+      collection = TransCollection.fromDocumentSnapshot(doc);
       print('updated');
       print(collection);
     });
@@ -222,13 +222,14 @@ class _CollectionPageState extends State<CollectionPage> {
         context: context,
         delegate: EntrySearchDelegate(
             collection: collection!,
-            entries: entryDocs?.map(TransEntry.fromSnapshot).toList() ?? []));
+            entries:
+                entryDocs?.map(TrEntry.fromDocumentSnapshot).toList() ?? []));
   }
 
   void _searchUser() async {
     final snapshot = await FirebaseFirestore.instance.collection('users').get();
     final users = {
-      for (var doc in snapshot.docs) doc.id: CustomUserInfo.fromSnapshot(doc)
+      for (var doc in snapshot.docs) doc.id: UserModel.fromDocumentSnapshot(doc)
     };
     showSearch(
       context: context,
@@ -255,7 +256,7 @@ class _CollectionPageState extends State<CollectionPage> {
                     return UserTile(
                       usr: usr,
                       trailing: ShareToggleButton(
-                          uid: usr.uid,
+                          uid: usr.uid!,
                           isCollaborator:
                               widget.folder.visibleFor.contains(usr.uid),
                           collection: widget.folder,
@@ -272,7 +273,7 @@ class _CollectionPageState extends State<CollectionPage> {
         actionBuilder: (usr) {
           final isCollaborator = widget.folder.visibleFor.contains(usr.uid);
           return ShareToggleButton(
-              uid: usr.uid,
+              uid: usr.uid!,
               isCollaborator: isCollaborator,
               collection: widget.folder,
               onSharingChanged: (shared) =>

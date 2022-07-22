@@ -5,7 +5,7 @@ import 'package:word_learn/screens/entry_search/entry_tile.dart';
 
 class EntrySearchDelegate extends SearchDelegate {
   final TransCollection collection;
-  final List<TransEntry> entries;
+  final List<TrEntry> entries;
 
   EntrySearchDelegate({required this.collection, required this.entries});
 

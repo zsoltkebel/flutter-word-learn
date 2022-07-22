@@ -1,17 +1,17 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:word_learn/model/custom_user_info.dart';
+import 'package:word_learn/model/user_model.dart';
 import 'dart:developer';
 
 import 'package:word_learn/screens/user_search/user_tile.dart';
 
-typedef ActionBuilder = Widget Function(CustomUserInfo usr);
+typedef ActionBuilder = Widget Function(UserModel user);
 typedef SuggestionBuilder = Widget Function();
 
 /// Custom SearchDelegate to query users.
 /// Functionality can be tweaked by providing an action and suggestion builder.
 class UserSearchDelegate extends SearchDelegate {
-  final Map<String, CustomUserInfo> users;
+  final Map<String, UserModel> users;
   final List<String> selectedUids;
   final ActionBuilder? actionBuilder;
   final SuggestionBuilder? suggestionBuilder;

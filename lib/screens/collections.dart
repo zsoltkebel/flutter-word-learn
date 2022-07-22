@@ -30,7 +30,7 @@ class CollectionsPage extends StatelessWidget {
               child: ListView.builder(
                 itemCount: snapshot.data!.docs.length,
                 itemBuilder: (context, index) {
-                  final folder = TransCollection.fromSnapshot(snapshot.data!.docs[index]);
+                  final folder = TransCollection.fromDocumentSnapshot(snapshot.data!.docs[index]);
                   return CollectionTile(folder: folder);
                 },
               ),

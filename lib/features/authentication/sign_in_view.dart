@@ -98,6 +98,7 @@ class _EmailField extends StatelessWidget {
         return SizedBox(
           width: size.width * 0.8,
           child: TextFormField(
+            initialValue: 'kevel.zsolt@gmail.com',
               onChanged: (value) {
                 context.read<FormBloc>().add(EmailChanged(value));
               },
@@ -130,6 +131,7 @@ class _PasswordField extends StatelessWidget {
         return SizedBox(
           width: size.width * 0.8,
           child: TextFormField(
+            initialValue: '123456789',
             obscureText: true,
             decoration: InputDecoration(
               contentPadding:

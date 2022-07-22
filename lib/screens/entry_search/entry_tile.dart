@@ -6,7 +6,7 @@ import 'package:word_learn/view/components/info_icons.dart';
 import 'package:word_learn/view/details_page.dart';
 
 class EntryTile extends StatelessWidget {
-  final TransEntry entry;
+  final TrEntry entry;
   final TransCollection collection;
 
   const EntryTile({

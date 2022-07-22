@@ -29,7 +29,7 @@ class TransCollection {
     this.entries,
   });
 
-  TransCollection.fromSnapshot(DocumentSnapshot doc)
+  TransCollection.fromDocumentSnapshot(DocumentSnapshot doc)
       : id = doc.id,
         name = doc['name'],
         reverseFor = List.from(doc['reverse-for']),

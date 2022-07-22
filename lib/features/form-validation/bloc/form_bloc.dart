@@ -6,6 +6,7 @@ import 'package:word_learn/features/database/database_repository_impl.dart';
 import 'package:word_learn/model/user_model.dart';
 
 part 'form_event.dart';
+
 part 'form_state.dart';
 
 class FormBloc extends Bloc<FormEvent, FormsValidate> {
@@ -41,6 +42,8 @@ class FormBloc extends Bloc<FormEvent, FormsValidate> {
   }
 
   bool _isPasswordValid(String password) {
+    //TODO re-enable passowrd check
+    return true;
     return _passwordRegExp.hasMatch(password);
   }
 
@@ -78,7 +81,6 @@ class FormBloc extends Bloc<FormEvent, FormsValidate> {
       isNameValid: _isNameValid(event.displayName),
     ));
   }
-
 
   _onFormSubmitted(FormSubmitted event, Emitter<FormsValidate> emit) async {
     UserModel user = UserModel(
@@ -128,18 +130,26 @@ class FormBloc extends Bloc<FormEvent, FormsValidate> {
 
   _authenticateUser(
       FormSubmitted event, Emitter<FormsValidate> emit, UserModel user) async {
-    emit(state.copyWith(errorMessage: "",
+    emit(state.copyWith(
+        errorMessage: "",
         isFormValid:
-        _isPasswordValid(state.password) && _isEmailValid(state.email),
+            _isPasswordValid(state.password) && _isEmailValid(state.email),
         isLoading: true));
     if (state.isFormValid) {
       try {
         UserCredential? authUser = await _authenticationRepository.signIn(user);
-        UserModel updatedUser = user.copyWith(isVerified: authUser!.user!.emailVerified);
+        UserModel updatedUser =
+            user.copyWith(isVerified: authUser!.user!.emailVerified);
         if (updatedUser.isVerified!) {
           emit(state.copyWith(isLoading: false, errorMessage: ""));
         } else {
-          emit(state.copyWith(isFormValid: false,errorMessage: "Please Verify your email, by clicking the link sent to you by mail.",isLoading: false));
+          emit(state.copyWith(
+              isFormValid: true,
+              // isFormValid: false
+              errorMessage: '',
+              // errorMessage:
+              //     "Please Verify your email, by clicking the link sent to you by mail.",
+              isLoading: false));
         }
       } on FirebaseAuthException catch (e) {
         emit(state.copyWith(

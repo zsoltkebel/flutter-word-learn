@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:equatable/equatable.dart';
 
 const text1Key = 'text-1';
 const text2Key = 'text-2';
@@ -8,7 +9,7 @@ const storageRef1Key = 'storage-ref-1';
 const storageRef2Key = 'storage-ref-2';
 
 /// Translation Entry
-class TransEntry {
+class TrEntry extends Equatable {
   final String? id;
   String text1;
   String text2;
@@ -18,7 +19,7 @@ class TransEntry {
   File? recording1; // local recording file
   File? recording2; // local recording file
 
-  TransEntry({
+  TrEntry({
     required this.text1,
     required this.text2,
     this.id,
@@ -28,7 +29,10 @@ class TransEntry {
     this.recording2,
   });
 
-  TransEntry.fromSnapshot(QueryDocumentSnapshot doc)
+  @override
+  List<Object?> get props => [id, text1, text2];
+
+  TrEntry.fromDocumentSnapshot(DocumentSnapshot doc)
       : id = doc.id,
         text1 = doc[text1Key],
         text2 = doc[text2Key] {
@@ -59,8 +63,8 @@ class TransEntry {
     }
   }
 
-  TransEntry copyWith({required String id}) {
-    return TransEntry(
+  TrEntry copyWith({required String id}) {
+    return TrEntry(
       text1: text1,
       text2: text2,
       id: id,

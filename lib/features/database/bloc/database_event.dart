@@ -12,3 +12,12 @@ class DatabaseFetched extends DatabaseEvent {
   @override
   List<Object?> get props => [displayName];
 }
+
+class DatabaseCollectionsFetched extends DatabaseEvent {
+  final UserModel? user;
+
+  const DatabaseCollectionsFetched(this.user);
+
+  @override
+  List<Object?> get props => [user];
+}

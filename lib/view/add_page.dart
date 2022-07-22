@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:word_learn/model/firebase_storage_helper.dart';
 import 'package:word_learn/model/firestore_manager.dart';
 import 'package:word_learn/model/trans_collection.dart';
 import 'package:word_learn/model/trans_entry.dart';
@@ -34,7 +33,7 @@ class _AddPageState extends State<AddPage> {
   File? recording1;
   File? recording2;
 
-  TransEntry entry = TransEntry(text1: '', text2: '');
+  TrEntry entry = TrEntry(text1: '', text2: '');
 
   void _submit() {
     if (wordController.text.isNotEmpty &&

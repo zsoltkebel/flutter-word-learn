@@ -19,6 +19,16 @@ class DatabaseSuccess extends DatabaseState {
   List<Object?> get props => [listOfUserData, displayName];
 }
 
+class DatabaseCollectionsSuccess extends DatabaseState {
+  final List<TransCollection> collections;
+  final String? uid;
+
+  const DatabaseCollectionsSuccess(this.collections, this.uid);
+
+  @override
+  List<Object?> get props => [collections, uid];
+}
+
 class DatabaseError extends DatabaseState {
   @override
   List<Object?> get props => [];

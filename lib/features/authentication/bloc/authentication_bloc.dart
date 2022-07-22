@@ -22,7 +22,9 @@ class AuthenticationBloc
         if (user.uid != 'uid') {
           String? displayName =
               await _authenticationRepository.retrieveUserName(user);
-          emit(AuthenticationSuccess(displayName: displayName));
+          user = UserModel(
+              uid: user.uid, email: user.uid, displayName: displayName);
+          emit(AuthenticationSuccess(user: user));
         } else {
           emit(AuthenticationFailure());
         }
