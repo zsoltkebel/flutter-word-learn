@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -9,8 +10,9 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
+  final nameController = TextEditingController();
+  final emailController = TextEditingController(text: 'kevel.zsolt@gmail.com');
+  final passwordController = TextEditingController(text: '123456789');
 
   @override
   Widget build(BuildContext context) {
@@ -18,6 +20,9 @@ class _LoginState extends State<Login> {
       body: SafeArea(
         child: Column(
           children: [
+            TextField(
+              controller: nameController,
+            ),
             TextField(
               controller: emailController,
             ),
@@ -45,6 +50,17 @@ class _LoginState extends State<Login> {
         email: email,
         password: password,
       );
+      print('name ${FirebaseAuth.instance.currentUser?.displayName}');
+      await userCredential.user?.updateDisplayName(nameController.text);
+
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user?.uid)
+          .set({
+        'uid': 'hmmm',
+        'display-name': nameController.text,
+        'photo-url': null,
+      });
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
         print('The password provided is too weak.');
@@ -58,10 +74,12 @@ class _LoginState extends State<Login> {
 
   void signIn(String email, String password) async {
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email,
-          password: password,
+      UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
       );
+      print('name ${FirebaseAuth.instance.currentUser?.displayName}');
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
         print('No user found for that email.');

@@ -1,15 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:word_learn/model/user_data.dart';
 import 'package:word_learn/screens/collections.dart';
 import 'package:word_learn/screens/friends.dart';
 
 class HomeScreen extends StatefulWidget {
-  final UserData? userData;
 
   const HomeScreen({
     Key? key,
-    this.userData,
   }) : super(key: key);
 
   @override
