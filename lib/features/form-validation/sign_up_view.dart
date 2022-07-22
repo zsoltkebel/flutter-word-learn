@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:word_learn/features/authentication/bloc/authentication_bloc.dart';
+import 'package:word_learn/features/authentication/sign_in_view.dart';
 import 'package:word_learn/features/database/home_view.dart';
 import 'package:word_learn/features/form-validation/bloc/form_bloc.dart';
 import 'package:word_learn/utils/constants.dart';
 import 'package:word_learn/welcome_view.dart';
+import 'package:word_learn/widgets/text_navigate.dart';
 
 OutlineInputBorder border = const OutlineInputBorder(
     borderSide: BorderSide(color: Constants.kBorderColor, width: 3.0));
@@ -50,7 +52,6 @@ class SignUpView extends StatelessWidget {
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset("assets/images/sign-in.png"),
                       const Text(Constants.textRegister,
                           textAlign: TextAlign.center,
                           style: TextStyle(
@@ -66,7 +67,18 @@ class SignUpView extends StatelessWidget {
                       SizedBox(height: size.height * 0.01),
                       const _DisplayNameField(),
                       SizedBox(height: size.height * 0.01),
-                      const _SubmitButton()
+                      const _SubmitButton(),
+                      TextNavigate(
+                          leadingText: 'Already have an account? ',
+                          actionText: 'Sign In',
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const SignInView()),
+                            );
+                          }),
                     ]),
               ),
             )));

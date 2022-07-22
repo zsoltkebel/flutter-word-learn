@@ -24,7 +24,7 @@ class Constants {
   static const textSmallSignIn = "You've been missed!";
   static const textSignInGoogle = "Sign In With Google";
   static const textAcc = "Don't have an account? ";
-  static const textSignUp = "Sign Up here";
+  static const textSignUp = "Sign Up";
   static const textHome = "Home";
   static const textNoData = "No Data Available!";
   static const textFixIssues = "Please fill the data correctly!";

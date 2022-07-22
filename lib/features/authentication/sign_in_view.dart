@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +6,7 @@ import 'package:word_learn/features/database/home_view.dart';
 import 'package:word_learn/features/form-validation/bloc/form_bloc.dart';
 import 'package:word_learn/features/form-validation/sign_up_view.dart';
 import 'package:word_learn/utils/constants.dart';
+import 'package:word_learn/widgets/text_navigate.dart';
 
 OutlineInputBorder border = const OutlineInputBorder(
     borderSide: BorderSide(color: Constants.kBorderColor, width: 3.0));
@@ -57,7 +57,6 @@ class SignInView extends StatelessWidget {
               child: SingleChildScrollView(
             child:
                 Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Image.asset("assets/images/sign-in.png"),
               RichText(
                   textAlign: TextAlign.center,
                   text: const TextSpan(children: <TextSpan>[
@@ -69,18 +68,24 @@ class SignInView extends StatelessWidget {
                           fontSize: 30.0,
                         )),
                   ])),
-              SizedBox(height: size.height * 0.01),
-              const Text(
-                Constants.textSmallSignIn,
-                style: TextStyle(color: Constants.kDarkGreyColor),
-              ),
               Padding(padding: EdgeInsets.only(bottom: size.height * 0.02)),
               const _EmailField(),
               SizedBox(height: size.height * 0.01),
               const _PasswordField(),
               SizedBox(height: size.height * 0.01),
               const _SubmitButton(),
-              const _SignInNavigate(),
+              // const _SignInNavigate(),
+              TextNavigate(
+                  leadingText: Constants.textAcc,
+                  actionText: Constants.textSignUp,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const SignUpView()),
+                    );
+                  }),
             ]),
           ))),
     );
@@ -98,7 +103,7 @@ class _EmailField extends StatelessWidget {
         return SizedBox(
           width: size.width * 0.8,
           child: TextFormField(
-            initialValue: 'kevel.zsolt@gmail.com',
+              initialValue: 'kevel.zsolt@gmail.com',
               onChanged: (value) {
                 context.read<FormBloc>().add(EmailChanged(value));
               },
@@ -186,38 +191,6 @@ class _SubmitButton extends StatelessWidget {
               );
       },
     );
-  }
-}
-
-class _SignInNavigate extends StatelessWidget {
-  const _SignInNavigate({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return RichText(
-        textAlign: TextAlign.center,
-        text: TextSpan(children: <TextSpan>[
-          const TextSpan(
-              text: Constants.textAcc,
-              style: TextStyle(
-                color: Constants.kDarkGreyColor,
-              )),
-          TextSpan(
-              recognizer: TapGestureRecognizer()
-                ..onTap = () => {
-                      Navigator.of(context).pop(),
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const SignUpView()),
-                      )
-                    },
-              text: Constants.textSignUp,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Constants.kDarkBlueColor,
-              )),
-        ]));
   }
 }
 
